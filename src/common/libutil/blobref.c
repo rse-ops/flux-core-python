@@ -1,0 +1,239 @@
+/************************************************************\
+ * Copyright 2015 Lawrence Livermore National Security, LLC
+ * (c.f. AUTHORS, NOTICE.LLNS, COPYING)
+ *
+ * This file is part of the Flux resource manager framework.
+ * For details, see https://github.com/flux-framework.
+ *
+ * SPDX-License-Identifier: LGPL-3.0
+\************************************************************/
+
+#if HAVE_CONFIG_H
+#include "config.h"
+#endif
+#include <ctype.h>
+#include <string.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <assert.h>
+#include <stdio.h>
+
+#include "src/common/libccan/ccan/str/hex/hex.h"
+
+#include "blobref.h"
+#include "sha1.h"
+#include "sha256.h"
+
+#define SHA1_PREFIX_STRING  "sha1-"
+#define SHA1_PREFIX_LENGTH  5
+#define SHA1_STRING_SIZE    (SHA1_DIGEST_SIZE*2 + SHA1_PREFIX_LENGTH + 1)
+
+#define SHA256_PREFIX_STRING  "sha256-"
+#define SHA256_PREFIX_LENGTH  7
+#define SHA256_STRING_SIZE    (SHA256_BLOCK_SIZE*2 + SHA256_PREFIX_LENGTH + 1)
+
+#if BLOBREF_MAX_STRING_SIZE < SHA1_STRING_SIZE
+#error BLOBREF_MAX_STRING_SIZE is too small
+#endif
+#if BLOBREF_MAX_DIGEST_SIZE < SHA1_DIGEST_SIZE
+#error BLOBREF_MAX_DIGEST_SIZE is too small
+#endif
+#if BLOBREF_MAX_STRING_SIZE < SHA256_STRING_SIZE
+#error BLOBREF_MAX_STRING_SIZE is too small
+#endif
+#if BLOBREF_MAX_DIGEST_SIZE < SHA256_BLOCK_SIZE
+#error BLOBREF_MAX_DIGEST_SIZE is too small
+#endif
+
+static void sha1_hash (const void *data, int data_len, void *hash, int hash_len);
+static void sha256_hash (const void *data, int data_len, void *hash, int hash_len);
+
+struct blobhash {
+    char *name;
+    int hashlen;
+    void (*hashfun)(const void *data, int data_len, void *hash, int hash_len);
+};
+
+static struct blobhash blobtab[] = {
+    { .name = "sha1",
+      .hashlen = SHA1_DIGEST_SIZE,
+      .hashfun = sha1_hash,
+    },
+    { .name = "sha256",
+      .hashlen = SHA256_BLOCK_SIZE,
+      .hashfun = sha256_hash,
+    },
+    { NULL, 0, 0 },
+};
+
+static void sha1_hash (const void *data, int data_len, void *hash, int hash_len)
+{
+    SHA1_CTX ctx;
+
+    assert (hash_len == SHA1_DIGEST_SIZE);
+    SHA1_Init (&ctx);
+    SHA1_Update (&ctx, data, data_len);
+    SHA1_Final (&ctx, hash);
+}
+
+static void sha256_hash (const void *data, int data_len, void *hash, int hash_len)
+{
+    SHA256_CTX ctx;
+
+    assert (hash_len == SHA256_BLOCK_SIZE);
+    sha256_init (&ctx);
+    sha256_update (&ctx, data, data_len);
+    sha256_final (&ctx, hash);
+}
+
+/* true if s1 contains "s2-" prefix
+ */
+static int prefixmatch (const char *s1, const char *s2)
+{
+    int len = strlen (s2);
+    if (strlen (s1) < len + 1 || s1[len] != '-')
+        return 0;
+    return !strncmp (s1, s2, len);
+}
+
+static struct blobhash *lookup_blobhash (const char *name)
+{
+    struct blobhash *bh;
+
+    for (bh = &blobtab[0]; bh->name != NULL; bh++)
+        if (!strcmp (name, bh->name) || prefixmatch (name, bh->name))
+            return bh;
+    return NULL;
+}
+
+static bool isxdigit_lower (char c)
+{
+    if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'))
+        return true;
+    return false;
+}
+
+int blobref_strtohash (const char *blobref, void *hash, int size)
+{
+    struct blobhash *bh;
+    int len = strlen (blobref);
+    int offset;
+
+    if (!(bh = lookup_blobhash (blobref)) || size < bh->hashlen)
+        goto inval;
+    offset = strlen (bh->name) + 1;
+    if (len - offset + 1 != hex_str_size (bh->hashlen))
+        goto inval;
+    if (!hex_decode (blobref + offset, len - offset, hash, bh->hashlen))
+        goto inval;
+    return bh->hashlen;
+inval:
+    errno = EINVAL;
+    return -1;
+}
+
+static int hashtostr (struct blobhash *bh,
+                      const void *hash, int len,
+                      char *blobref, int blobref_len)
+{
+    int offset;
+
+    if (len != bh->hashlen || !blobref)
+        goto inval;
+    offset = strlen (bh->name) + 1;
+    if (blobref_len - offset + 1 < (int)hex_str_size (bh->hashlen))
+        goto inval;
+    strcpy (blobref, bh->name);
+    strcat (blobref, "-");
+    if (!hex_encode (hash, len, blobref + offset, blobref_len - offset))
+        goto inval;
+    return 0;
+inval:
+    errno = EINVAL;
+    return -1;
+}
+
+int blobref_hashtostr (const char *hashtype,
+                       const void *hash, int len,
+                       void *blobref, int blobref_len)
+{
+    struct blobhash *bh;
+
+    if (!(bh = lookup_blobhash (hashtype))) {
+        errno = EINVAL;
+        return -1;
+    }
+    return hashtostr (bh, hash, len, blobref, blobref_len);
+}
+
+
+int blobref_hash (const char *hashtype,
+                  const void *data, int len,
+                  void *blobref, int blobref_len)
+{
+    struct blobhash *bh;
+    uint8_t hash[BLOBREF_MAX_DIGEST_SIZE];
+
+    if (!(bh = lookup_blobhash (hashtype))) {
+        errno = EINVAL;
+        return -1;
+    }
+    bh->hashfun (data, len, hash, bh->hashlen);
+    return hashtostr (bh, hash, bh->hashlen, blobref, blobref_len);
+}
+
+int blobref_hash_raw (const char *hashtype,
+                      const void *data, int len,
+                      void *hash, int hash_len)
+{
+    struct blobhash *bh;
+
+    if (!hashtype
+        || !(bh = lookup_blobhash (hashtype))
+        || hash_len < bh->hashlen
+        || !hash) {
+        errno = EINVAL;
+        return -1;
+    }
+    bh->hashfun (data, len, hash, bh->hashlen);
+    return bh->hashlen;
+}
+
+int blobref_validate (const char *blobref)
+{
+    struct blobhash *bh;
+    int len;
+    int offset;
+
+    if (!blobref || !(bh = lookup_blobhash (blobref)))
+        goto inval;
+    len = strlen (blobref);
+    offset = strlen (bh->name) + 1;
+    if (len - offset + 1 != hex_str_size (bh->hashlen))
+        goto inval;
+    blobref += offset;
+    while (*blobref) {
+        if (!isxdigit_lower (*blobref++))
+            goto inval;
+    }
+    return 0;
+inval:
+    errno = EINVAL;
+    return -1;
+}
+
+ssize_t blobref_validate_hashtype (const char *name)
+{
+    struct blobhash *bh;
+
+    if (name == NULL || !(bh = lookup_blobhash (name))) {
+        errno = EINVAL;
+        return -1;
+    }
+    return bh->hashlen;
+}
+
+
+/*
+ * vi:tabstop=4 shiftwidth=4 expandtab
+ */

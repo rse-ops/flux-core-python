@@ -1,0 +1,3 @@
+     STATE NNODES RANKS           NODELIST
+     avail      3 0,2-3           foo[1,3-4]
+    avail*      1 1               foo2

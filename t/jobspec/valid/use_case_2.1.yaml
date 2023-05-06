@@ -1,0 +1,19 @@
+version: 999
+resources:
+  - type: slot
+    label: default
+    count: 4
+    with:
+      - type: node
+        count: 1
+tasks:
+  - command: [ "hostname" ]
+    slot: default
+    count:
+      per_slot: 5
+attributes:
+  system:
+    duration: 3600.
+    cwd: "/home/flux"
+    environment:
+      HOME: "/home/flux"

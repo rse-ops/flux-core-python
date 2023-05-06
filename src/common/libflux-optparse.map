@@ -1,0 +1,6 @@
+{ global:
+    optparse_*;
+    __asan*;
+    local: *;
+};
+
