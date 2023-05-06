@@ -368,28 +368,44 @@ struct jobid_parse_test jobid_parse_tests[] = {
     { "dothex", 0,     "0000.0000.0000.0000" },
     { "kvs",    0,     "job.0000.0000.0000.0000" },
     { "words",  0,     "academy-academy-academy--academy-academy-academy" },
+#if ASSUME_BROKEN_LOCALE
+    { "f58",    0,     "f1" },
+#else
     { "f58",    0,     "ƒ1" },
+#endif
 
     { "dec",    1,     "1" },
     { "hex",    1,     "0x1" },
     { "dothex", 1,     "0000.0000.0000.0001" },
     { "kvs",    1,     "job.0000.0000.0000.0001" },
     { "words",  1,     "acrobat-academy-academy--academy-academy-academy" },
+#if ASSUME_BROKEN_LOCALE
+    { "f58",    1,     "f2" },
+#else
     { "f58",    1,     "ƒ2" },
+#endif
 
     { "dec",    65535, "65535" },
     { "hex",    65535, "0xffff" },
     { "dothex", 65535, "0000.0000.0000.ffff" },
     { "kvs",    65535, "job.0000.0000.0000.ffff" },
     { "words",  65535, "nevada-archive-academy--academy-academy-academy" },
+#if ASSUME_BROKEN_LOCALE
+    { "f58",    65535, "fLUv" },
+#else
     { "f58",    65535, "ƒLUv" },
+#endif
 
     { "dec",    6787342413402046, "6787342413402046" },
     { "hex",    6787342413402046, "0x181d0d4d850fbe" },
     { "dothex", 6787342413402046, "0018.1d0d.4d85.0fbe" },
     { "kvs",    6787342413402046, "job.0018.1d0d.4d85.0fbe" },
     { "words",  6787342413402046, "cake-plume-nepal--neuron-pencil-academy" },
+#if ASSUME_BROKEN_LOCALE
+    { "f58",    6787342413402046, "fuzzybunny" },
+#else
     { "f58",    6787342413402046, "ƒuzzybunny" },
+#endif
 
     { NULL, 0, NULL }
 };
@@ -437,6 +453,17 @@ void check_jobid_parse_encode (void)
         "flux_job_id_encode with unknown encode type returns EPROTO");
 }
 
+static void check_job_timeleft (void)
+{
+    flux_t *h = (flux_t *)(uintptr_t)42; // fake but non-NULL
+    flux_error_t error;
+    double timeleft;
+
+    ok (flux_job_timeleft (NULL, &error, &timeleft) < 0 && errno == EINVAL,
+        "flux_job_timeleft (NULL, ...) returns EINVAL");
+    ok (flux_job_timeleft (h, &error, NULL) < 0 && errno == EINVAL,
+        "flux_job_timeleft (h, error, NULL) returns EINVAL");
+}
 
 int main (int argc, char *argv[])
 {
@@ -444,6 +471,7 @@ int main (int argc, char *argv[])
 
     /* fluid F58 tests require unicode locale initialization */
     setlocale (LC_ALL, "en_US.UTF-8");
+    unsetenv ("FLUX_F58_FORCE_ASCII");
 
     check_jobkey ();
 
@@ -456,6 +484,8 @@ int main (int argc, char *argv[])
     check_kvs_namespace ();
 
     check_jobid_parse_encode ();
+
+    check_job_timeleft ();
 
     done_testing ();
     return 0;

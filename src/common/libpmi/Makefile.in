@@ -91,7 +91,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 TESTS = test_keyval.t$(EXEEXT) test_simple.t$(EXEEXT) \
-	test_canonical.t$(EXEEXT) test_canonical2.t$(EXEEXT)
+	test_canonical.t$(EXEEXT) test_canonical2.t$(EXEEXT) \
+	test_upmi.t$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1) test_pmi_info$(EXEEXT) \
 	test_pmi2_info$(EXEEXT) test_kvstest$(EXEEXT) \
 	test_kvstest2$(EXEEXT)
@@ -120,7 +121,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -134,32 +134,50 @@ CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libpmi_client_la_LIBADD =
-am__objects_1 = pmi_strerror.lo keyval.lo
-am_libpmi_client_la_OBJECTS = simple_client.lo pmi.lo pmi2.lo \
-	dgetline.lo $(am__objects_1)
+am_libpmi_client_la_OBJECTS = simple_client.lo pmi.lo pmi2.lo
 libpmi_client_la_OBJECTS = $(am_libpmi_client_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+libpmi_common_la_LIBADD =
+am_libpmi_common_la_OBJECTS = pmi_strerror.lo keyval.lo dgetline.lo
+libpmi_common_la_OBJECTS = $(am_libpmi_common_la_OBJECTS)
 libpmi_server_la_LIBADD =
-am_libpmi_server_la_OBJECTS = simple_server.lo $(am__objects_1)
+am_libpmi_server_la_OBJECTS = simple_server.lo
 libpmi_server_la_OBJECTS = $(am_libpmi_server_la_OBJECTS)
-am__EXEEXT_1 = test_keyval.t$(EXEEXT) test_simple.t$(EXEEXT) \
-	test_canonical.t$(EXEEXT) test_canonical2.t$(EXEEXT)
-am__dirstamp = $(am__leading_dot)dirstamp
-am_test_canonical_t_OBJECTS =  \
-	test/test_canonical_t-canonical.$(OBJEXT) \
-	test/test_canonical_t-server_thread.$(OBJEXT)
-test_canonical_t_OBJECTS = $(am_test_canonical_t_OBJECTS)
+libupmi_la_LIBADD =
+am_libupmi_la_OBJECTS = upmi.lo upmi_simple.lo upmi_libpmi.lo \
+	upmi_single.lo
+libupmi_la_OBJECTS = $(am_libupmi_la_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/common/libflux/libflux.la \
+	$(top_builddir)/src/common/libkvs/libkvs.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libtap/libtap.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+test_plugin_singlex_la_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
+	$(am__DEPENDENCIES_2)
+am__dirstamp = $(am__leading_dot)dirstamp
+am_test_plugin_singlex_la_OBJECTS =  \
+	test/plugin/test_plugin_singlex_la-singlex.lo
+test_plugin_singlex_la_OBJECTS = $(am_test_plugin_singlex_la_OBJECTS)
+test_plugin_singlex_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(test_plugin_singlex_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am__EXEEXT_1 = test_keyval.t$(EXEEXT) test_simple.t$(EXEEXT) \
+	test_canonical.t$(EXEEXT) test_canonical2.t$(EXEEXT) \
+	test_upmi.t$(EXEEXT)
+am_test_canonical_t_OBJECTS =  \
+	test/test_canonical_t-canonical.$(OBJEXT) \
+	test/test_canonical_t-server_thread.$(OBJEXT)
+test_canonical_t_OBJECTS = $(am_test_canonical_t_OBJECTS)
 test_canonical_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_test_canonical2_t_OBJECTS =  \
 	test/test_canonical2_t-canonical2.$(OBJEXT) \
@@ -185,6 +203,11 @@ am_test_simple_t_OBJECTS = test/test_simple_t-simple.$(OBJEXT) \
 	test/test_simple_t-server_thread.$(OBJEXT)
 test_simple_t_OBJECTS = $(am_test_simple_t_OBJECTS)
 test_simple_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am_test_upmi_t_OBJECTS = test/test_upmi_t-upmi.$(OBJEXT)
+test_upmi_t_OBJECTS = $(am_test_upmi_t_OBJECTS)
+test_upmi_t_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
+	$(am__DEPENDENCIES_2)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -219,16 +242,20 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libpmi_client_la_SOURCES) $(libpmi_server_la_SOURCES) \
-	$(test_canonical_t_SOURCES) $(test_canonical2_t_SOURCES) \
-	$(test_keyval_t_SOURCES) $(test_kvstest_SOURCES) \
-	$(test_kvstest2_SOURCES) $(test_pmi2_info_SOURCES) \
-	$(test_pmi_info_SOURCES) $(test_simple_t_SOURCES)
-DIST_SOURCES = $(libpmi_client_la_SOURCES) $(libpmi_server_la_SOURCES) \
-	$(test_canonical_t_SOURCES) $(test_canonical2_t_SOURCES) \
-	$(test_keyval_t_SOURCES) $(test_kvstest_SOURCES) \
-	$(test_kvstest2_SOURCES) $(test_pmi2_info_SOURCES) \
-	$(test_pmi_info_SOURCES) $(test_simple_t_SOURCES)
+SOURCES = $(libpmi_client_la_SOURCES) $(libpmi_common_la_SOURCES) \
+	$(libpmi_server_la_SOURCES) $(libupmi_la_SOURCES) \
+	$(test_plugin_singlex_la_SOURCES) $(test_canonical_t_SOURCES) \
+	$(test_canonical2_t_SOURCES) $(test_keyval_t_SOURCES) \
+	$(test_kvstest_SOURCES) $(test_kvstest2_SOURCES) \
+	$(test_pmi2_info_SOURCES) $(test_pmi_info_SOURCES) \
+	$(test_simple_t_SOURCES) $(test_upmi_t_SOURCES)
+DIST_SOURCES = $(libpmi_client_la_SOURCES) $(libpmi_common_la_SOURCES) \
+	$(libpmi_server_la_SOURCES) $(libupmi_la_SOURCES) \
+	$(test_plugin_singlex_la_SOURCES) $(test_canonical_t_SOURCES) \
+	$(test_canonical2_t_SOURCES) $(test_keyval_t_SOURCES) \
+	$(test_kvstest_SOURCES) $(test_kvstest2_SOURCES) \
+	$(test_pmi2_info_SOURCES) $(test_pmi_info_SOURCES) \
+	$(test_simple_t_SOURCES) $(test_upmi_t_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -568,8 +595,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -718,27 +743,35 @@ AM_CPPFLAGS = \
 
 noinst_LTLIBRARIES = \
 	libpmi_client.la \
-	libpmi_server.la
+	libpmi_server.la \
+	libpmi_common.la \
+	libupmi.la
 
-libpmi_common_sources = \
+libpmi_common_la_SOURCES = \
 	pmi_strerror.c \
 	pmi_strerror.h \
 	keyval.c \
-	keyval.h
+	keyval.h \
+	dgetline.c \
+	dgetline.h
 
 libpmi_client_la_SOURCES = \
 	simple_client.c \
 	simple_client.h \
 	pmi.c \
-	pmi2.c \
-	dgetline.c \
-	dgetline.h \
-	$(libpmi_common_sources)
+	pmi2.c
 
 libpmi_server_la_SOURCES = \
 	simple_server.h \
-	simple_server.c \
-	$(libpmi_common_sources)
+	simple_server.c
+
+libupmi_la_SOURCES = \
+	upmi.h \
+	upmi.c \
+	upmi_plugin.h \
+	upmi_simple.c \
+	upmi_libpmi.c \
+	upmi_single.c
 
 fluxinclude_HEADERS = \
 	pmi.h \
@@ -746,8 +779,10 @@ fluxinclude_HEADERS = \
 
 test_ldadd = \
 	$(top_builddir)/src/common/libflux/libflux.la \
+	$(top_builddir)/src/common/libkvs/libkvs.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libtap/libtap.la \
 	$(JANSSON_LIBS) \
@@ -757,7 +792,14 @@ test_ldadd = \
 
 test_cppflags = \
 	-I$(top_srcdir)/src/common/libtap \
+	-DUPMI_TEST_SEARCHPATH=\"$(builddir)/test/plugin/.libs\" \
 	$(AM_CPPFLAGS)
+
+test_ldflags = \
+	-no-install
+
+check_LTLIBRARIES = \
+        test/plugin/singlex.la
 
 TEST_EXTENSIONS = .t
 T_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
@@ -787,6 +829,12 @@ test_canonical2_t_SOURCES = \
 
 test_canonical2_t_CPPFLAGS = $(test_cppflags)
 test_canonical2_t_LDADD = $(test_ldadd)
+test_upmi_t_SOURCES = test/upmi.c
+test_upmi_t_CPPFLAGS = $(test_cppflags)
+test_upmi_t_LDADD = \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
+	$(test_ldadd)
+
 test_pmi_info_SOURCES = test/pmi_info.c
 test_pmi_info_CPPFLAGS = $(test_cppflags)
 test_pmi_info_LDADD = $(test_ldadd)
@@ -799,6 +847,13 @@ test_kvstest_LDADD = $(test_ldadd)
 test_kvstest2_SOURCES = test/kvstest2.c
 test_kvstest2_CPPFLAGS = $(test_cppflags)
 test_kvstest2_LDADD = $(test_ldadd)
+test_plugin_singlex_la_SOURCES = test/plugin/singlex.c
+test_plugin_singlex_la_CPPFLAGS = $(test_cppflags)
+test_plugin_singlex_la_LIBADD = \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
+	$(test_ldadd)
+
+test_plugin_singlex_la_LDFLAGS = -module -rpath /nowhere $(test_ldflags)
 EXTRA_DIST = \
     ltrace.conf
 
@@ -836,6 +891,17 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
+clean-checkLTLIBRARIES:
+	-test -z "$(check_LTLIBRARIES)" || rm -f $(check_LTLIBRARIES)
+	@list='$(check_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
 clean-noinstLTLIBRARIES:
 	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
 	@list='$(noinst_LTLIBRARIES)'; \
@@ -850,8 +916,26 @@ clean-noinstLTLIBRARIES:
 libpmi_client.la: $(libpmi_client_la_OBJECTS) $(libpmi_client_la_DEPENDENCIES) $(EXTRA_libpmi_client_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libpmi_client_la_OBJECTS) $(libpmi_client_la_LIBADD) $(LIBS)
 
+libpmi_common.la: $(libpmi_common_la_OBJECTS) $(libpmi_common_la_DEPENDENCIES) $(EXTRA_libpmi_common_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libpmi_common_la_OBJECTS) $(libpmi_common_la_LIBADD) $(LIBS)
+
 libpmi_server.la: $(libpmi_server_la_OBJECTS) $(libpmi_server_la_DEPENDENCIES) $(EXTRA_libpmi_server_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libpmi_server_la_OBJECTS) $(libpmi_server_la_LIBADD) $(LIBS)
+
+libupmi.la: $(libupmi_la_OBJECTS) $(libupmi_la_DEPENDENCIES) $(EXTRA_libupmi_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libupmi_la_OBJECTS) $(libupmi_la_LIBADD) $(LIBS)
+test/plugin/$(am__dirstamp):
+	@$(MKDIR_P) test/plugin
+	@: > test/plugin/$(am__dirstamp)
+test/plugin/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) test/plugin/$(DEPDIR)
+	@: > test/plugin/$(DEPDIR)/$(am__dirstamp)
+test/plugin/test_plugin_singlex_la-singlex.lo:  \
+	test/plugin/$(am__dirstamp) \
+	test/plugin/$(DEPDIR)/$(am__dirstamp)
+
+test/plugin/singlex.la: $(test_plugin_singlex_la_OBJECTS) $(test_plugin_singlex_la_DEPENDENCIES) $(EXTRA_test_plugin_singlex_la_DEPENDENCIES) test/plugin/$(am__dirstamp)
+	$(AM_V_CCLD)$(test_plugin_singlex_la_LINK)  $(test_plugin_singlex_la_OBJECTS) $(test_plugin_singlex_la_LIBADD) $(LIBS)
 
 clean-checkPROGRAMS:
 	@list='$(check_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -921,10 +1005,18 @@ test/test_simple_t-server_thread.$(OBJEXT): test/$(am__dirstamp) \
 test_simple.t$(EXEEXT): $(test_simple_t_OBJECTS) $(test_simple_t_DEPENDENCIES) $(EXTRA_test_simple_t_DEPENDENCIES) 
 	@rm -f test_simple.t$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_simple_t_OBJECTS) $(test_simple_t_LDADD) $(LIBS)
+test/test_upmi_t-upmi.$(OBJEXT): test/$(am__dirstamp) \
+	test/$(DEPDIR)/$(am__dirstamp)
+
+test_upmi.t$(EXEEXT): $(test_upmi_t_OBJECTS) $(test_upmi_t_DEPENDENCIES) $(EXTRA_test_upmi_t_DEPENDENCIES) 
+	@rm -f test_upmi.t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_upmi_t_OBJECTS) $(test_upmi_t_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f test/*.$(OBJEXT)
+	-rm -f test/plugin/*.$(OBJEXT)
+	-rm -f test/plugin/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -936,6 +1028,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmi_strerror.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple_client.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simple_server.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upmi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upmi_libpmi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upmi_simple.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/upmi_single.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_canonical2_t-canonical2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_canonical2_t-server_thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_canonical_t-canonical.Po@am__quote@
@@ -947,6 +1043,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_pmi_info-pmi_info.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_simple_t-server_thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_simple_t-simple.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_upmi_t-upmi.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@test/plugin/$(DEPDIR)/test_plugin_singlex_la-singlex.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -971,6 +1069,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+test/plugin/test_plugin_singlex_la-singlex.lo: test/plugin/singlex.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_plugin_singlex_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/plugin/test_plugin_singlex_la-singlex.lo -MD -MP -MF test/plugin/$(DEPDIR)/test_plugin_singlex_la-singlex.Tpo -c -o test/plugin/test_plugin_singlex_la-singlex.lo `test -f 'test/plugin/singlex.c' || echo '$(srcdir)/'`test/plugin/singlex.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/plugin/$(DEPDIR)/test_plugin_singlex_la-singlex.Tpo test/plugin/$(DEPDIR)/test_plugin_singlex_la-singlex.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/plugin/singlex.c' object='test/plugin/test_plugin_singlex_la-singlex.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_plugin_singlex_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/plugin/test_plugin_singlex_la-singlex.lo `test -f 'test/plugin/singlex.c' || echo '$(srcdir)/'`test/plugin/singlex.c
 
 test/test_canonical_t-canonical.o: test/canonical.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_canonical_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_canonical_t-canonical.o -MD -MP -MF test/$(DEPDIR)/test_canonical_t-canonical.Tpo -c -o test/test_canonical_t-canonical.o `test -f 'test/canonical.c' || echo '$(srcdir)/'`test/canonical.c
@@ -1126,11 +1231,26 @@ test/test_simple_t-server_thread.obj: test/server_thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_simple_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_simple_t-server_thread.obj `if test -f 'test/server_thread.c'; then $(CYGPATH_W) 'test/server_thread.c'; else $(CYGPATH_W) '$(srcdir)/test/server_thread.c'; fi`
 
+test/test_upmi_t-upmi.o: test/upmi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_upmi_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_upmi_t-upmi.o -MD -MP -MF test/$(DEPDIR)/test_upmi_t-upmi.Tpo -c -o test/test_upmi_t-upmi.o `test -f 'test/upmi.c' || echo '$(srcdir)/'`test/upmi.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_upmi_t-upmi.Tpo test/$(DEPDIR)/test_upmi_t-upmi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/upmi.c' object='test/test_upmi_t-upmi.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_upmi_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_upmi_t-upmi.o `test -f 'test/upmi.c' || echo '$(srcdir)/'`test/upmi.c
+
+test/test_upmi_t-upmi.obj: test/upmi.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_upmi_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_upmi_t-upmi.obj -MD -MP -MF test/$(DEPDIR)/test_upmi_t-upmi.Tpo -c -o test/test_upmi_t-upmi.obj `if test -f 'test/upmi.c'; then $(CYGPATH_W) 'test/upmi.c'; else $(CYGPATH_W) '$(srcdir)/test/upmi.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_upmi_t-upmi.Tpo test/$(DEPDIR)/test_upmi_t-upmi.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/upmi.c' object='test/test_upmi_t-upmi.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_upmi_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_upmi_t-upmi.obj `if test -f 'test/upmi.c'; then $(CYGPATH_W) 'test/upmi.c'; else $(CYGPATH_W) '$(srcdir)/test/upmi.c'; fi`
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf test/plugin/.libs test/plugin/_libs
 install-fluxincludeHEADERS: $(fluxinclude_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(fluxinclude_HEADERS)'; test -n "$(fluxincludedir)" || list=; \
@@ -1335,7 +1455,7 @@ check-TESTS:
 	log_list=`echo $$log_list`; trs_list=`echo $$trs_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all $(check_PROGRAMS)
+recheck: all $(check_LTLIBRARIES) $(check_PROGRAMS)
 	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -1392,7 +1512,7 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
+	$(MAKE) $(AM_MAKEFLAGS) $(check_LTLIBRARIES) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
@@ -1431,17 +1551,19 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f test/$(DEPDIR)/$(am__dirstamp)
 	-rm -f test/$(am__dirstamp)
+	-rm -f test/plugin/$(DEPDIR)/$(am__dirstamp)
+	-rm -f test/plugin/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
-	clean-noinstLTLIBRARIES mostlyclean-am
+clean-am: clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
+	clean-libtool clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) test/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) test/$(DEPDIR) test/plugin/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1487,7 +1609,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) test/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) test/$(DEPDIR) test/plugin/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -1509,20 +1631,20 @@ uninstall-am: uninstall-fluxincludeHEADERS
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-TESTS check-am clean \
-	clean-checkPROGRAMS clean-generic clean-libtool \
-	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am \
-	install-fluxincludeHEADERS install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	recheck tags tags-am uninstall uninstall-am \
-	uninstall-fluxincludeHEADERS
+	clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
+	clean-libtool clean-noinstLTLIBRARIES cscopelist-am ctags \
+	ctags-am distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-fluxincludeHEADERS install-html \
+	install-html-am install-info install-info-am install-man \
+	install-pdf install-pdf-am install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am recheck tags tags-am uninstall \
+	uninstall-am uninstall-fluxincludeHEADERS
 
 .PRECIOUS: Makefile
 

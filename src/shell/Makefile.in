@@ -122,7 +122,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -193,6 +192,7 @@ flux_shell_DEPENDENCIES = $(builddir)/libshell.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libflux-taskmap.la \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libczmqcontainers/libczmqcontainers.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
@@ -640,8 +640,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -876,6 +874,7 @@ flux_shell_LDADD = \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libflux-taskmap.la \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libczmqcontainers/libczmqcontainers.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-optparse.la \

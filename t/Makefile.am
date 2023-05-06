@@ -73,6 +73,9 @@ TESTSCRIPTS = \
 	t0024-content-s3.t \
 	t0028-content-backing-none.t \
 	t0029-filemap-cmd.t \
+	t0030-marshall.t \
+	t0031-constraint-parser.t \
+	t0032-directives-parser.t \
 	t0025-broker-state-machine.t \
 	t0027-broker-groups.t \
 	t0013-config-file.t \
@@ -107,7 +110,6 @@ TESTSCRIPTS = \
 	t2004-hydra.t \
 	t2007-caliper.t \
 	t2008-althash.t \
-	t2009-pmix-bootstrap.t \
 	t2010-kvs-snapshot-restore.t \
 	t2100-job-ingest.t \
 	t2110-job-ingest-validator.t \
@@ -141,7 +143,8 @@ TESTSCRIPTS = \
 	t2231-job-info-eventlog-watch.t \
 	t2232-job-info-security.t \
 	t2240-queue-cmd.t \
-	t2241-policy-config.t \
+	t2241-queue-cmd-list.t \
+	t2245-policy-config.t \
 	t2250-job-archive.t \
 	t2260-job-list.t \
 	t2261-job-list-update.t \
@@ -155,6 +158,7 @@ TESTSCRIPTS = \
 	t2280-job-memo.t \
 	t2300-sched-simple.t \
 	t2302-sched-simple-up-down.t \
+	t2303-sched-hello.t \
 	t2310-resource-module.t \
 	t2311-resource-drain.t \
 	t2312-resource-exclude.t \
@@ -195,6 +199,12 @@ TESTSCRIPTS = \
 	t2701-mini-batch.t \
 	t2702-mini-alloc.t \
 	t2703-mini-bulksubmit.t \
+	t2710-python-cli-submit.t \
+	t2711-python-cli-run.t \
+	t2712-python-cli-alloc.t \
+	t2713-python-cli-bulksubmit.t \
+	t2714-python-cli-batch.t \
+	t2715-python-cli-cancel.t \
 	t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t \
 	t2800-jobs-instance-info.t \
@@ -209,6 +219,8 @@ TESTSCRIPTS = \
 	t2808-shutdown-cmd.t \
 	t2809-job-purge.t \
 	t2810-kvs-garbage-collect.t \
+	t2811-flux-pgrep.t \
+	t2812-flux-job-last.t \
 	t2900-job-timelimits.t \
 	t3000-mpi-basic.t \
 	t3001-mpi-personalities.t \
@@ -250,6 +262,7 @@ TESTSCRIPTS = \
 	python/t0024-util.py \
 	python/t0025-uri.py \
 	python/t0026-tree.py \
+	python/t0027-constraint-parser.py \
 	python/t1000-service-add-remove.py
 
 if HAVE_FLUX_SECURITY
@@ -280,7 +293,10 @@ EXTRA_DIST= \
 	scripts/run_timeout.py \
 	scripts/startctl.py \
 	scripts/groups.py \
+	scripts/rexec.py \
 	jobspec \
+	marshall \
+	batch \
 	job-manager/dumps \
 	flux-resource \
 	resource/get-xml-test.py
@@ -323,6 +339,7 @@ dist_check_SCRIPTS = \
 	issues/t4612-eventlog-overwrite-crash.sh \
 	issues/t4711-job-list-purge-inactive.sh \
 	issues/t4771-flux-start-bash.sh \
+	issues/t4852-t_submit-legacy.sh \
 	python/__init__.py \
 	python/subflux.py \
 	python/tap \
@@ -336,6 +353,7 @@ dist_check_SCRIPTS = \
 	scripts/dmesg-grep.py \
 	scripts/stats-listen.py \
 	scripts/sqlite-query.py \
+	scripts/pipe.py \
 	valgrind/valgrind-workload.sh \
 	valgrind/workload.d/job \
 	content/content-helper.sh \
@@ -387,7 +405,6 @@ check_PROGRAMS = \
 	barrier/tbarrier \
 	reactor/reactorcat \
 	rexec/rexec \
-	rexec/rexec_ps \
 	rexec/rexec_count_stdout \
 	rexec/rexec_getline \
 	job-manager/list-jobs \
@@ -402,7 +419,8 @@ check_PROGRAMS = \
 	hwloc/hwloc-convert \
 	hwloc/hwloc-version \
 	util/jobspec1-validate \
-	util/handle
+	util/handle \
+	util/marshall
 
 if HAVE_MPI
 check_PROGRAMS += \
@@ -709,11 +727,6 @@ rexec_rexec_CPPFLAGS = $(test_cppflags)
 rexec_rexec_LDADD = $(test_ldadd)
 rexec_rexec_LDFLAGS = $(test_ldflags)
 
-rexec_rexec_ps_SOURCES = rexec/rexec_ps.c
-rexec_rexec_ps_CPPFLAGS = $(test_cppflags)
-rexec_rexec_ps_LDADD = $(test_ldadd)
-rexec_rexec_ps_LDFLAGS = $(test_ldflags)
-
 rexec_rexec_count_stdout_SOURCES = rexec/rexec_count_stdout.c
 rexec_rexec_count_stdout_CPPFLAGS = $(test_cppflags)
 rexec_rexec_count_stdout_LDADD = $(test_ldadd)
@@ -982,6 +995,11 @@ util_handle_SOURCES = util/handle.c
 util_handle_CPPFLAGS = $(test_cppflags)
 util_handle_LDADD = $(test_ldadd)
 util_handle_LDFLAGS = $(test_ldflags)
+
+util_marshall_SOURCES = util/marshall.c
+util_marshall_CPPFLAGS = $(test_cppflags)
+util_marshall_LDADD = $(test_ldadd)
+util_marshall_LDFLAGS = $(test_ldflags)
 
 stats_stats_basic_la_SOURCES = stats/stats-basic.c
 stats_stats_basic_la_CPPFLAGS = $(test_cppflags)

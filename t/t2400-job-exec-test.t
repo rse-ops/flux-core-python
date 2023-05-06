@@ -16,7 +16,7 @@ job_kvsdir()    { flux job id --to=kvs $1; }
 exec_eventlog() { flux kvs get -r $(job_kvsdir $1).guest.exec.eventlog; }
 
 test_expect_success 'job-exec: generate jobspec for simple test job' '
-	flux mini run \
+	flux run \
 	    --setattr=system.exec.test.run_duration=0.0001s \
 	    --dry-run hostname > basic.json
 '
@@ -43,10 +43,10 @@ test_expect_success 'job-exec: exec.eventlog exists with expected states' '
 	tail -1 eventlog.1.out | grep "done"
 '
 test_expect_success 'job-exec: canceling job during execution works' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
                 --setattr=system.exec.test.run_duration=10s hostname) &&
 	flux job wait-event -vt 2.5 ${jobid} start &&
-	flux job cancel ${jobid} &&
+	flux cancel ${jobid} &&
 	flux job wait-event -t 2.5 ${jobid} exception &&
 	flux job wait-event -t 2.5 ${jobid} finish | grep status=15 &&
 	flux job wait-event -t 2.5 ${jobid} release &&
@@ -54,7 +54,7 @@ test_expect_success 'job-exec: canceling job during execution works' '
 	exec_eventlog $jobid | grep "complete" | grep "\"status\":15"
 '
 test_expect_success 'job-exec: mock exception during initialization' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	         --setattr=system.exec.test.mock_exception=init true) &&
 	flux job wait-event -t 2.5 ${jobid} exception > exception.1.out &&
 	test_debug "flux job eventlog ${jobid}" &&
@@ -65,7 +65,7 @@ test_expect_success 'job-exec: mock exception during initialization' '
 	test_must_fail grep "finish" eventlog.${jobid}.out
 '
 test_expect_success 'job-exec: mock exception during run' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	         --setattr=system.exec.test.mock_exception=run true) &&
 	flux job wait-event -t 2.5 ${jobid} exception > exception.2.out &&
 	grep "type=\"exec\"" exception.2.out &&
@@ -87,7 +87,7 @@ test_expect_success 'start request with empty payload fails with EPROTO(71)' '
 	${RPC} job-exec.start 71 </dev/null
 '
 test_expect_success 'job-exec: invalid testexec conf generates exception' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	    --setattr=system.exec.test.run_duration=0.01 hostname) &&
 	flux job wait-event -t 5 ${jobid} exception > except.invalid.out &&
 	grep "type=\"exec\"" except.invalid.out &&
@@ -95,7 +95,7 @@ test_expect_success 'job-exec: invalid testexec conf generates exception' '
 	flux job eventlog ${jobid}
 '
 test_expect_success 'job-exec: test exec start override works' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	    --setattr=system.exec.test.override=1 \
 	    --setattr=system.exec.test.run_duration=0.001s \
 	    true) &&
@@ -106,15 +106,15 @@ test_expect_success 'job-exec: test exec start override works' '
 	flux job wait-event -t 5 -v ${jobid} clean
 '
 test_expect_success 'job-exec: override only works on jobs with flag set' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 		--setattr=system.exec.test.run_duration=0. /bin/true) &&
 	flux job wait-event -t 5 ${jobid} alloc &&
 	test_must_fail flux job-exec-override start ${jobid} &&
-	flux job cancel ${jobid} &&
+	flux cancel ${jobid} &&
 	flux job wait-event -t 5 -v ${jobid} clean
 '
 test_expect_success 'job-exec: test exec start/finish override works' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	    --setattr=system.exec.test.override=1 \
 	    true) &&
 	flux job wait-event -t 5 ${jobid} alloc &&
@@ -145,18 +145,18 @@ test_expect_success 'job-exec: job-exec.testoverride invalid request' '
 	EOF
 	echo {} | \
 	  test_must_fail flux python override.py &&
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	    --setattr=system.exec.test.override=1 \
 	    true) &&
 	cat <<-EOF >badevent.json &&
 	{"jobid":"$(flux job id --to=dec ${jobid})", "event":"foo"}
 	EOF
 	test_must_fail flux python override.py < badevent.json &&
-	flux job cancel $jobid &&
+	flux cancel $jobid &&
 	flux job wait-event $jobid clean
 '
 test_expect_success 'job-exec: flux job-exec-override fails for invalid userid' '
-	jobid=$(flux mini submit \
+	jobid=$(flux submit \
 	    --setattr=system.exec.test.override=1 \
 	    true) &&
 	newid=$(($(id -u)+1)) &&
@@ -164,7 +164,7 @@ test_expect_success 'job-exec: flux job-exec-override fails for invalid userid' 
 	  export FLUX_HANDLE_USERID=$newid &&
 	    test_must_fail flux job-exec-override start ${jobid}
 	) &&
-	flux job cancel ${jobid} &&
+	flux cancel ${jobid} &&
 	flux job wait-event -t 5 -v ${jobid} clean
 '
 test_expect_success 'job-exec: critical-ranks RPC handles unexpected input' '
@@ -177,7 +177,7 @@ test_expect_success 'job-exec: critical-ranks RPC handles unexpected input' '
 	      {"id": JobID(sys.argv[1]), "ranks": sys.argv[2]}).get()
 	EOF
 	test_must_fail flux python critical-ranks.py 1234 0-1 &&
-	id=$(flux mini submit --wait-event=start sleep 300) &&
+	id=$(flux submit --wait-event=start sleep 300) &&
 	test_must_fail flux python critical-ranks.py $id foo &&
 	newid=$(($(id -u)+1)) &&
         ( export FLUX_HANDLE_ROLEMASK=0x2 &&

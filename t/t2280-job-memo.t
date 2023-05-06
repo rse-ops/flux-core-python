@@ -26,11 +26,11 @@ test_expect_success 'memo: error on invalide jobid' '
 	test_expect_code 1 flux job memo f1 foo=bar
 '
 test_expect_success 'memo: create one inactive job' '
-	flux mini submit /bin/true >inactivejob &&
+	flux submit /bin/true >inactivejob &&
 	flux queue drain
 '
 test_expect_success 'memo: submit a running and pending job' '
-	flux mini bulksubmit --urgency={} sleep 300 ::: 16 16 0 >jobids &&
+	flux bulksubmit --urgency={} sleep 300 ::: 16 16 0 >jobids &&
 	runid=$(head -n 1 jobids) &&
 	pendingid=$(tail -n 1 jobids) &&
 	flux job wait-event $runid start
@@ -97,7 +97,7 @@ test_expect_success HAVE_JQ 'memo: non-volatile memos still available in job-lis
 	jlist_check_memo $pendingid a \"b\"
 '
 test_expect_success 'memo: cancel all jobs' '
-	flux job cancelall -f &&
+	flux cancel --all &&
 	flux job wait-event $runid clean &&
 	flux job wait-event $pendingid clean
 '

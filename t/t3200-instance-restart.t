@@ -14,22 +14,22 @@ fi
 
 test_expect_success 'run a job in persistent instance' '
 	flux start -o,--setattr=statedir=$(pwd) \
-	           flux mini submit /bin/true >id1.out
+	           flux submit /bin/true >id1.out
 '
 
 test_expect_success 'restart instance and run another job' '
 	flux start -o,--setattr=statedir=$(pwd) \
-	           flux mini submit /bin/true >id2.out
+	           flux submit /bin/true >id2.out
 '
 
 test_expect_success 'restart instance and run another job' '
 	flux start -o,--setattr=statedir=$(pwd) \
-	           flux mini submit /bin/true >id3.out
+	           flux submit /bin/true >id3.out
 '
 
 test_expect_success 'restart instance and list inactive jobs' '
 	flux start -o,--setattr=statedir=$(pwd) \
-	           flux jobs --suppress-header --format={id} \
+	           flux jobs --no-header --format={id} \
 		   	--filter=INACTIVE >list.out
 '
 
@@ -61,25 +61,26 @@ test_expect_success 'doctor startlog to look like a crash' '
 		-o,-Sbroker.rc3_path=$SHARNESS_TEST_SRCDIR/rc/rc3-kvs \
 		flux startlog --post-start-event
 '
-test_expect_success 'check queue status' '
+test_expect_success 'run flux and capture logs on stderr' '
 	flux start -o,--setattr=statedir=$(pwd) \
-		flux queue status >queue_status.out 2>&1
+		-o,--setattr=log-stderr-level=6 \
+		/bin/true 2>improper.err
 '
-test_expect_success 'safe mode is entered' '
-	grep "Flux is in safe mode" queue_status.out
+test_expect_success 'improper shutdown was logged' '
+	grep "Flux was not shut down properly" improper.err
 '
 
 test_expect_success 'run a job in persistent instance (content-files)' '
 	flux start \
 	    -o,-Scontent.backing-module=content-files \
 	    -o,-Sstatedir=$(pwd) \
-	    flux mini submit /bin/true >files_id1.out
+	    flux submit /bin/true >files_id1.out
 '
 test_expect_success 'restart instance and list inactive jobs' '
 	flux start \
 	    -o,-Scontent.backing-module=content-files \
 	    -o,-Sstatedir=$(pwd) \
-	    flux jobs --suppress-header --format={id} \
+	    flux jobs --no-header --format={id} \
 	        --filter=INACTIVE >files_list.out
 '
 
@@ -108,12 +109,12 @@ test_expect_success S3 'create content-s3.toml from env' '
 test_expect_success S3 'run a job in persistent instance (content-s3)' '
 	flux start \
 	    -o,-Scontent.backing-module=content-s3 \
-	    flux mini submit /bin/true >files_id2.out
+	    flux submit /bin/true >files_id2.out
 '
 test_expect_success S3 'restart instance and list inactive jobs' '
 	flux start \
 	    -o,-Scontent.backing-module=content-s3 \
-	    flux jobs --suppress-header --format={id} \
+	    flux jobs --no-header --format={id} \
 	        --filter=INACTIVE >files_list2.out
 '
 

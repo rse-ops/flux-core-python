@@ -34,6 +34,11 @@ MAN1_FILES_PRIMARY = \
 	man1/flux-cron.1 \
 	man1/flux-event.1 \
 	man1/flux-mini.1 \
+	man1/flux-submit.1 \
+	man1/flux-run.1 \
+	man1/flux-bulksubmit.1 \
+	man1/flux-alloc.1 \
+	man1/flux-batch.1 \
 	man1/flux-job.1 \
 	man1/flux-version.1 \
 	man1/flux-jobs.1 \
@@ -45,13 +50,16 @@ MAN1_FILES_PRIMARY = \
 	man1/flux-shutdown.1 \
 	man1/flux-uptime.1 \
 	man1/flux-uri.1 \
-	man1/flux-resource.1
+	man1/flux-resource.1 \
+	man1/flux-pgrep.1 \
+	man1/flux-cancel.1
 
 # These files are generated as clones of a primary page.
 # Sphinx handles this automatically if declared in the conf.py
 MAN1_FILES_SECONDARY = \
 	man1/flux-setattr.1 \
-	man1/flux-lsattr.1
+	man1/flux-lsattr.1 \
+	man1/flux-pkill.1
 
 
 MAN3_FILES = $(MAN3_FILES_PRIMARY) $(MAN3_FILES_SECONDARY)
@@ -128,7 +136,8 @@ MAN3_FILES_PRIMARY = \
 	man3/idset_encode.3 \
 	man3/idset_add.3 \
 	man3/flux_jobtap_get_flux.3 \
-	man3/flux_sync_create.3
+	man3/flux_sync_create.3 \
+	man3/flux_job_timeleft.3
 
 
 # These files are generated as clones of a primary page.
@@ -318,9 +327,21 @@ RST_FILES  = \
 
 if ENABLE_DOCS
 man_MANS = $(MAN1_FILES) $(MAN3_FILES) $(MAN5_FILES) $(MAN7_FILES)
-$(RST_FILES): man1/NODESET.rst \
-	man3/JSON_PACK.rst \
-	man3/JSON_UNPACK.rst
+$(RST_FILES): \
+	man1/common/nodeset.rst \
+	man1/common/submit-job-parameters.rst \
+	man1/common/submit-standard-io.rst \
+	man1/common/submit-constraints.rst \
+	man1/common/submit-dependencies.rst \
+	man1/common/submit-environment.rst \
+	man1/common/submit-process-resource-limits.rst \
+	man1/common/submit-exit-status.rst \
+	man1/common/submit-other-options.rst \
+	man1/common/submit-bulksubmit.rst \
+	man1/common/submit-shell-options.rst \
+	man1/common/submit-submission-directives.rst \
+	man3/common/json_pack.rst \
+	man3/common/json_unpack.rst
 endif
 
 SUFFIXES = .rst .1 .3 .5 .7
@@ -369,9 +390,20 @@ EXTRA_DIST = \
 	domainrefs.py \
 	index.rst \
 	$(RST_FILES) \
-	man1/NODESET.rst \
-	man3/JSON_PACK.rst \
-	man3/JSON_UNPACK.rst \
+	man1/common/nodeset.rst \
+	man1/common/submit-job-parameters.rst \
+	man1/common/submit-standard-io.rst \
+	man1/common/submit-constraints.rst \
+	man1/common/submit-dependencies.rst \
+	man1/common/submit-environment.rst \
+	man1/common/submit-process-resource-limits.rst \
+	man1/common/submit-exit-status.rst \
+	man1/common/submit-other-options.rst \
+	man1/common/submit-bulksubmit.rst \
+	man1/common/submit-shell-options.rst \
+	man1/common/submit-submission-directives.rst \
+	man3/common/json_pack.rst \
+	man3/common/json_unpack.rst \
 	man7/flux-undocumented.rst
 
 CLEANFILES = \

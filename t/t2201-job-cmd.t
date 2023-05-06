@@ -30,7 +30,7 @@ flux setattr log-stderr-level 1
 
 # Other tests may refer to $(cat inactivejob) for inactive job id
 test_expect_success 'create one inactive job' '
-	flux mini submit /bin/true >inactivejob &&
+	flux submit /bin/true >inactivejob &&
 	flux queue drain
 '
 
@@ -41,7 +41,7 @@ test_expect_success 'unload job-exec,sched-simple modules' '
 '
 
 test_expect_success 'flux-job: generate jobspec for simple test job' '
-	flux mini run --dry-run -n1 hostname >basic.json
+	flux run --dry-run -n1 hostname >basic.json
 '
 
 test_expect_success 'flux-job: submit one job to get one valid job in queue' '
@@ -170,6 +170,9 @@ test_expect_success 'flux-job: id --to=f58 works' '
 '
 
 UTF8_LOCALE=$(locale -a | grep UTF-8 | head -n1)
+if flux version | grep +ascii-only; then
+	UTF8_LOCALE=""
+fi
 test -n "$UTF8_LOCALE" && test_set_prereq UTF8_LOCALE
 test_expect_success UTF8_LOCALE 'flux-job: f58 can use multibyte prefix' '
 	test_debug "echo UTF8_LOCALE=${UTF8_LOCALE}" &&
@@ -246,39 +249,39 @@ test_expect_success 'flux-job: raise fails with invalid option' '
 '
 
 test_expect_success 'flux-job: raise basic works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job raise ${id} &&
-	flux job wait-event -t 5 ${id} exception >raise1.out &&
+	flux job wait-event -t 30 ${id} exception >raise1.out &&
 	grep "cancel" raise1.out &&
 	grep "severity\=0" raise1.out
 '
 
 test_expect_success 'flux-job: raise --type works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job raise -t typefoo ${id} &&
-	flux job wait-event -t 5 ${id} exception >raise2.out &&
+	flux job wait-event -t 30 ${id} exception >raise2.out &&
 	grep "typefoo" raise2.out
 '
 
 test_expect_success 'flux-job: raise --severity works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job raise --severity=5 ${id} &&
-	flux job wait-event -t 5 ${id} exception >raise3.out &&
+	flux job wait-event -t 30 ${id} exception >raise3.out &&
 	grep "severity\=5" raise3.out &&
 	flux job cancel ${id}
 '
 
 test_expect_success 'flux-job: raise --message works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job raise --message=foobarmessage ${id} &&
-	flux job wait-event -t 5 ${id} exception >raise4.out &&
+	flux job wait-event -t 30 ${id} exception >raise4.out &&
 	grep "foobarmessage" raise4.out
 '
 
 test_expect_success ' flux-job: raise message works (cmdline)' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job raise ${id} -- eep ork ook &&
-	flux job wait-event -t 5 ${id} exception >raise5.out &&
+	flux job wait-event -t 30 ${id} exception >raise5.out &&
 	grep "eep ork ook" raise5.out
 '
 
@@ -311,24 +314,24 @@ test_expect_success 'flux-job: cancel fails with invalid option' '
 '
 
 test_expect_success 'flux-job: cancel basic works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job cancel ${id} &&
-	flux job wait-event -t 5 ${id} exception >cancel1.out &&
+	flux job wait-event -t 30 ${id} exception >cancel1.out &&
 	grep "cancel" cancel1.out &&
 	grep "severity\=0" cancel1.out
 '
 
 test_expect_success 'flux-job: cancel --message works' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job cancel --message=meepmessage ${id} &&
-	flux job wait-event -t 5 ${id} exception >cancel2.out &&
+	flux job wait-event -t 30 ${id} exception >cancel2.out &&
 	grep "meepmessage" cancel2.out
 '
 
 test_expect_success ' flux-job: cancel message works (cmdline)' '
-	id=$(flux mini submit sleep 100) &&
+	id=$(flux submit sleep 100) &&
 	flux job cancel ${id} -- foo loo moo &&
-	flux job wait-event -t 5 ${id} exception >cancel3.out &&
+	flux job wait-event -t 30 ${id} exception >cancel3.out &&
 	grep "foo loo moo" cancel3.out
 '
 
@@ -350,10 +353,6 @@ test_expect_success 'flux-job: namespace works' '
 	test "$(flux job namespace 1)" = "job-1" &&
 	test "$(echo 1 | flux job namespace)" = "job-1" &&
 	test_expect_code 1 flux job namespace -1
-'
-
-test_expect_success 'flux-job: attach fails without jobid argument' '
-	test_must_fail flux job attach
 '
 
 test_expect_success 'flux-job: attach fails without jobid argument' '
@@ -627,7 +626,7 @@ test_expect_success 'flux-job: raiseall --user name works' '
 '
 
 test_expect_success 'submit 3 test jobs' '
-	for i in $(seq 1 3); do flux mini submit sleep 60 >>jobs; done
+	for i in $(seq 1 3); do flux submit sleep 60 >>jobs; done
 '
 
 test_expect_success 'flux-job: raiseall returns correct count' '
@@ -682,53 +681,114 @@ test_expect_success 'flux-job: load modules for live kill tests' '
 
 # N.B. SIGTERM == 15
 test_expect_success 'flux-job: kill basic works' '
-	id=$(flux mini submit --wait-event=start sleep 100) &&
+	id=$(flux submit --wait-event=start sleep 100) &&
 	flux job kill ${id} &&
-	flux job wait-event -t 5 ${id} finish > kill1.out &&
+	flux job wait-event -t 30 ${id} finish > kill1.out &&
 	grep status=$((15+128<<8)) kill1.out
 '
 
 # N.B. SIGUSR1 == 10
 test_expect_success 'flux-job: kill --signal works' '
-	id=$(flux mini submit --wait-event=start sleep 100) &&
+	id=$(flux submit --wait-event=start sleep 100) &&
 	flux job kill --signal=SIGUSR1 ${id} &&
-	flux job wait-event -t 5 ${id} finish > kill2.out &&
+	flux job wait-event -t 30 ${id} finish > kill2.out &&
 	grep status=$((10+128<<8)) kill2.out
 '
 
 test_expect_success 'flux job: killall -f kills one job' '
-	id=$(flux mini submit sleep 600) &&
+	id=$(flux submit sleep 600) &&
 	flux job wait-event $id start &&
 	flux job killall -f &&
 	run_timeout 60 flux queue drain
 '
 
 test_expect_success 'flux job: cancel can operate on multiple jobs' '
-	ids=$(flux mini submit --bcc=1-3 sleep 600) &&
+	ids=$(flux submit --bcc=1-3 sleep 600) &&
 	flux job cancel ${ids} cancel multiple jobs &&
 	for id in ${ids}; do
-		flux job wait-event -t 5 ${id} exception >exception.out &&
+		flux job wait-event -t 30 ${id} exception >exception.out &&
 		grep multiple exception.out
 	done
 '
 
 test_expect_success 'flux job: raise can operate on multiple jobs' '
-	ids=$(flux mini submit --bcc=1-3 sleep 600) &&
+	ids=$(flux submit --bcc=1-3 sleep 600) &&
 	flux job raise ${ids} raise multiple jobs &&
 	for id in ${ids}; do
-		flux job wait-event -t 5 ${id} exception >exception2.out &&
+		flux job wait-event -t 30 ${id} exception >exception2.out &&
 		grep multiple exception2.out
 	done
 '
 
 # N.B. SIGTERM == 15
 test_expect_success 'flux job: kill can operate on multiple jobs' '
-	ids=$(flux mini submit --wait-event=start --bcc=1-3 sleep 600) &&
+	ids=$(flux submit --wait-event=start --bcc=1-3 sleep 600) &&
 	flux job kill ${ids} &&
 	for id in ${ids}; do
-		flux job wait-event -t 5 ${id} finish >killmulti.out &&
+		flux job wait-event -t 30 ${id} finish >killmulti.out &&
 		grep status=$((15+128<<8)) killmulti.out
 	done
 '
+test_expect_success 'flux job: timeleft reports error outside of a job' '
+	test_expect_code 1 flux job timeleft
+'
 
+test_expect_success 'flux job: timeleft reports large int with no time limit' '
+	flux run flux job timeleft > timeleft1 &&
+	test $(cat timeleft1) -gt 9999999
+'
+test_expect_success 'flux job: timeleft -H reports infinity with no time limit' '
+	flux run flux job timeleft -H > timeleft1H &&
+	grep infinity timeleft1H
+'
+test_expect_success 'flux job: timeleft works with time limit' '
+	flux run -t 1m flux job timeleft >timeleft2 &&
+	test_debug "cat timeleft2" &&
+	test $(cat timeleft2) -lt 60
+'
+test_expect_success 'flux job: timeleft -H works with time limit' '
+	flux run -t 1m flux job timeleft -H >timeleft2H &&
+	grep "[0-9]s$" timeleft2H
+'
+test_expect_success 'flux job: timeleft works under mini alloc (and job)' '
+	cat <<-EOF >test.sh &&
+	flux job timeleft > timeleft3
+	flux run flux job timeleft > timeleft4
+	EOF
+	chmod +x test.sh &&
+	flux alloc -n1 -t 1m ./test.sh &&
+	test_debug "cat timeleft3" &&
+	test $(cat timeleft3) -lt 60 &&
+	test_debug "cat timeleft4" &&
+	test $(cat timeleft4) -lt 60
+'
+test_expect_success 'flux job: timeleft works for a jobid' '
+	id=$(flux submit --wait-event=start -t 1m sleep 60) &&
+	flux job timeleft $id > timeleft5 &&
+	test_debug "cat timeleft5" &&
+	test $(cat timeleft5) -lt 60
+'
+test_expect_success 'flux job: timeleft reports 0s for expired job' '
+	id=$(flux submit --wait -t0.01s hostname || true) &&
+	flux job timeleft $id > timeleft6 &&
+	test_debug "cat timeleft6" &&
+	test $(cat timeleft6) -eq 0
+'
+test_expect_success 'flux job: timeleft returns 0 for completed job' '
+	id=$(flux submit --wait -t 5d true) &&
+	flux job timeleft $id > timeleft7 &&
+	test_debug "cat timeleft7" &&
+	test $(cat timeleft7) -eq 0
+'
+test_expect_success 'flux job: timeleft fails for pending job' '
+	flux queue stop &&
+	id=$(flux submit -t 10m true) &&
+	test_expect_code 1 flux job timeleft $id > timeleft8 2>&1 &&
+	flux queue start &&
+	grep "has not started" timeleft8
+'
+test_expect_success 'flux job: timeleft fails for invalid jobids' '
+	test_expect_code 1 flux job timeleft f1234 &&
+	test_expect_code 1 flux job timeleft x1234
+'
 test_done

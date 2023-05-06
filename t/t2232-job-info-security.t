@@ -26,7 +26,7 @@ update_job_userid() {
 submit_job() {
 	local jobid=$(flux job submit sleeplong.json) &&
 	flux job wait-event $jobid start >/dev/null &&
-	flux job cancel $jobid &&
+	flux cancel $jobid &&
 	flux job wait-event $jobid clean >/dev/null &&
 	update_job_userid $1 &&
 	echo $jobid
@@ -49,7 +49,7 @@ bad_first_event() {
 	flux kvs get --raw ${kvsdir}.eventlog \
 		| sed -e s/submit/foobar/ \
 		| flux kvs put --raw ${kvsdir}.eventlog=- &&
-	flux job cancel $jobid &&
+	flux cancel $jobid &&
 	echo $jobid
 }
 
@@ -64,7 +64,7 @@ unset_userid() {
 }
 
 test_expect_success 'job-info: generate jobspec for simple test job' '
-	flux mini run --dry-run -n1 -N1 sleep 300 > sleeplong.json
+	flux run --dry-run -n1 -N1 sleep 300 > sleeplong.json
 '
 
 #
@@ -260,7 +260,7 @@ test_expect_success 'flux job wait-event guest.exec.eventlog fails via -p (wrong
 test_expect_success 'flux job wait-event guest.exec.eventlog works via -p (live job, owner)' '
 	jobid=$(submit_job_live) &&
 	flux job wait-event -p guest.exec.eventlog $jobid init &&
-	flux job cancel $jobid
+	flux cancel $jobid
 '
 
 test_expect_success 'flux job wait-event guest.exec.eventlog works via -p (live job, user)' '
@@ -268,7 +268,7 @@ test_expect_success 'flux job wait-event guest.exec.eventlog works via -p (live 
 	set_userid 9000 &&
 	flux job wait-event -p guest.exec.eventlog $jobid init &&
 	unset_userid &&
-	flux job cancel $jobid
+	flux cancel $jobid
 '
 
 test_expect_success 'flux job wait-event guest.exec.eventlog fails via -p (live job, wrong user)' '
@@ -276,7 +276,7 @@ test_expect_success 'flux job wait-event guest.exec.eventlog fails via -p (live 
 	set_userid 9999 &&
 	! flux job wait-event -p guest.exec.eventlog $jobid init &&
 	unset_userid &&
-	flux job cancel $jobid
+	flux cancel $jobid
 '
 
 #

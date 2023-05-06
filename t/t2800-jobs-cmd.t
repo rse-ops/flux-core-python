@@ -4,17 +4,7 @@ test_description='Test flux jobs command'
 
 . $(dirname $0)/sharness.sh
 
-mkdir -p conf.d
-cat >conf.d/config.toml <<-EOT
-[policy]
-jobspec.defaults.system.queue = "defaultqueue"
-
-[queues.defaultqueue]
-[queues.queue1]
-[queues.queue2]
-EOT
-
-test_under_flux 4 job -o,--config-path=$(pwd)/conf.d
+test_under_flux 4 job
 
 RPC=${FLUX_BUILD_DIR}/t/request/rpc
 runpty="${SHARNESS_TEST_SRCDIR}/scripts/runpty.py --line-buffer -f asciicast"
@@ -86,15 +76,26 @@ listjobs() {
 	    | flux job id --to=f58
 }
 
+test_expect_success 'configure testing queues' '
+	flux config load <<-EOT &&
+	[policy]
+	jobspec.defaults.system.queue = "defaultqueue"
+	[queues.defaultqueue]
+	[queues.queue1]
+	[queues.queue2]
+	EOT
+	flux queue start --all
+'
+
 test_expect_success HAVE_JQ 'submit jobs for job list testing' '
 	#  Create `hostname` and `sleep` jobspec
 	#  N.B. Used w/ `flux job submit` for serial job submission
-	#  for efficiency (vs serial `flux mini submit`.
+	#  for efficiency (vs serial `flux submit`.
 	#
-	flux mini submit --dry-run \
+	flux submit --dry-run \
 		--queue=queue1 \
 		hostname >hostname.json &&
-	flux mini submit --dry-run \
+	flux submit --dry-run \
 		--time-limit=5m \
 		--queue=queue2 \
 		sleep 600 > sleeplong.json &&
@@ -113,14 +114,14 @@ test_expect_success HAVE_JQ 'submit jobs for job list testing' '
 	#  Run a job that will fail, copy its JOBID to both inactive and
 	#   failed lists.
 	#
-	! jobid=`flux mini submit --wait nosuchcommand` &&
+	! jobid=`flux submit --wait nosuchcommand` &&
 	echo $jobid >> inactiveids &&
 	echo $jobid > failed.ids &&
 	#
 	#  Run a job that will timeout, copy its JOBID to both inactive and
 	#   timeout lists.
 	#
-	jobid=`flux mini submit --time-limit=0.5s sleep 30` &&
+	jobid=`flux submit --time-limit=0.5s sleep 30` &&
 	echo $jobid >> inactiveids &&
 	echo $jobid > timeout.ids &&
 	fj_wait_event ${jobid} clean &&
@@ -141,9 +142,9 @@ test_expect_success HAVE_JQ 'submit jobs for job list testing' '
 	#
 	#  Submit a job and cancel it
 	#
-	jobid=`flux mini submit --job-name=canceledjob sleep 30` &&
+	jobid=`flux submit --job-name=canceledjob sleep 30` &&
 	fj_wait_event $jobid depend &&
-	flux job cancel $jobid &&
+	flux cancel $jobid &&
 	fj_wait_event $jobid clean &&
 	echo $jobid >> inactiveids &&
 	echo $jobid > canceled.ids &&
@@ -157,8 +158,8 @@ test_expect_success HAVE_JQ 'submit jobs for job list testing' '
 #
 # basic tests
 #
-test_expect_success 'flux-jobs --suppress-header works' '
-	count=`flux jobs --suppress-header | wc -l` &&
+test_expect_success 'flux-jobs --no-header works' '
+	count=`flux jobs --no-header | wc -l` &&
 	test $count -eq $(state_count active)
 '
 test_expect_success 'flux-jobs default output works' '
@@ -198,15 +199,15 @@ test_expect_success 'flux-jobs: request indication of truncation works' '
 # TODO: need to submit jobs as another user and test -A again
 test_expect_success 'flux-jobs -a and -A works' '
 	nall=$(state_count all) &&
-	count=`flux jobs --suppress-header -a | wc -l` &&
+	count=`flux jobs --no-header -a | wc -l` &&
 	test $count -eq $nall &&
-	count=`flux jobs --suppress-header -a -A | wc -l` &&
+	count=`flux jobs --no-header -a -A | wc -l` &&
 	test $count -eq $nall
 '
 
 test_expect_success 'flux-jobs --since implies -a' '
 	nall=$(state_count all) &&
-	count=$(flux jobs --suppress-header --since=0.0 | wc -l) &&
+	count=$(flux jobs --no-header --since=0.0 | wc -l) &&
 	test $count -eq $nall
 '
 
@@ -262,82 +263,82 @@ test_expect_success 'flux-jobs --queue works' '
 # Recall pending = depend | priority | sched, running = run | cleanup,
 #  active = pending | running
 test_expect_success 'flux-jobs --filter works (job states)' '
-	count=`flux jobs --suppress-header --filter=depend | wc -l` &&
+	count=`flux jobs --no-header --filter=depend | wc -l` &&
 	test $count -eq 0 &&
-	count=`flux jobs --suppress-header --filter=priority | wc -l` &&
+	count=`flux jobs --no-header --filter=priority | wc -l` &&
 	test $count -eq 0 &&
-	count=`flux jobs --suppress-header --filter=sched | wc -l` &&
+	count=`flux jobs --no-header --filter=sched | wc -l` &&
 	test $count -eq $(state_count sched) &&
-	count=`flux jobs --suppress-header --filter=pending | wc -l` &&
+	count=`flux jobs --no-header --filter=pending | wc -l` &&
 	test $count -eq $(state_count sched) &&
-	count=`flux jobs --suppress-header --filter=run | wc -l` &&
+	count=`flux jobs --no-header --filter=run | wc -l` &&
 	test $count -eq $(state_count run) &&
-	count=`flux jobs --suppress-header --filter=cleanup | wc -l` &&
+	count=`flux jobs --no-header --filter=cleanup | wc -l` &&
 	test $count -eq 0 &&
-	count=`flux jobs --suppress-header --filter=running | wc -l` &&
+	count=`flux jobs --no-header --filter=running | wc -l` &&
 	test $count -eq $(state_count run) &&
-	count=`flux jobs --suppress-header --filter=inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=inactive | wc -l` &&
 	test $count -eq $(state_count inactive) &&
-	count=`flux jobs --suppress-header --filter=pending,running | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,running | wc -l` &&
 	test $count -eq $(state_count sched run) &&
-	count=`flux jobs --suppress-header --filter=sched,run | wc -l` &&
+	count=`flux jobs --no-header --filter=sched,run | wc -l` &&
 	test $count -eq $(state_count sched run) &&
-	count=`flux jobs --suppress-header --filter=active | wc -l` &&
+	count=`flux jobs --no-header --filter=active | wc -l` &&
 	test $count -eq $(state_count active) &&
-	count=`flux jobs --suppress-header --filter=depend,priority,sched,run,cleanup | wc -l` &&
+	count=`flux jobs --no-header --filter=depend,priority,sched,run,cleanup | wc -l` &&
 	test $count -eq $(state_count active) &&
-	count=`flux jobs --suppress-header --filter=pending,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,inactive | wc -l` &&
 	test $count -eq $(state_count sched inactive) &&
-	count=`flux jobs --suppress-header --filter=sched,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=sched,inactive | wc -l` &&
 	test $count -eq $(state_count sched inactive) &&
-	count=`flux jobs --suppress-header --filter=running,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=running,inactive | wc -l` &&
 	test $count -eq $(state_count run inactive) &&
-	count=`flux jobs --suppress-header --filter=run,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=run,inactive | wc -l` &&
 	test $count -eq $(state_count run inactive) &&
-	count=`flux jobs --suppress-header --filter=pending,running,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,running,inactive | wc -l` &&
 	test $count -eq $(state_count all) &&
-	count=`flux jobs --suppress-header --filter=active,inactive | wc -l` &&
+	count=`flux jobs --no-header --filter=active,inactive | wc -l` &&
 	test $count -eq $(state_count active inactive) &&
-	count=`flux jobs --suppress-header --filter=depend,priority,cleanup | wc -l` &&
+	count=`flux jobs --no-header --filter=depend,priority,cleanup | wc -l` &&
 	test $count -eq 0
 '
 
 test_expect_success 'flux-jobs --filter works (job results)' '
-	count=`flux jobs --suppress-header --filter=completed | wc -l` &&
+	count=`flux jobs --no-header --filter=completed | wc -l` &&
 	test $count -eq $(state_count completed) &&
-	count=`flux jobs --suppress-header --filter=failed | wc -l` &&
+	count=`flux jobs --no-header --filter=failed | wc -l` &&
 	test $count -eq $(state_count failed) &&
-	count=`flux jobs --suppress-header --filter=canceled | wc -l` &&
+	count=`flux jobs --no-header --filter=canceled | wc -l` &&
 	test $count -eq $(state_count canceled) &&
-	count=`flux jobs --suppress-header --filter=timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=timeout | wc -l` &&
 	test $count -eq $(state_count timeout) &&
-	count=`flux jobs --suppress-header --filter=completed,failed | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,failed | wc -l` &&
 	test $count -eq $(state_count completed failed) &&
-	count=`flux jobs --suppress-header --filter=completed,canceled | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,canceled | wc -l` &&
 	test $count -eq $(state_count completed canceled) &&
-	count=`flux jobs --suppress-header --filter=completed,timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,timeout | wc -l` &&
 	test $count -eq $(state_count completed timeout) &&
-	count=`flux jobs --suppress-header --filter=completed,failed,canceled | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,failed,canceled | wc -l` &&
 	test $count -eq $(state_count completed failed canceled) &&
-	count=`flux jobs --suppress-header --filter=completed,failed,timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,failed,timeout | wc -l` &&
 	test $count -eq $(state_count completed failed timeout) &&
-	count=`flux jobs --suppress-header --filter=completed,failed,canceled,timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=completed,failed,canceled,timeout | wc -l` &&
 	test $count -eq $(state_count completed failed canceled timeout) &&
-	count=`flux jobs --suppress-header --filter=pending,completed | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,completed | wc -l` &&
 	test $count -eq $(state_count sched completed) &&
-	count=`flux jobs --suppress-header --filter=pending,failed | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,failed | wc -l` &&
 	test $count -eq $(state_count sched failed) &&
-	count=`flux jobs --suppress-header --filter=pending,canceled | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,canceled | wc -l` &&
 	test $count -eq $(state_count sched canceled) &&
-	count=`flux jobs --suppress-header --filter=pending,timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=pending,timeout | wc -l` &&
 	test $count -eq $(state_count sched timeout) &&
-	count=`flux jobs --suppress-header --filter=running,completed | wc -l` &&
+	count=`flux jobs --no-header --filter=running,completed | wc -l` &&
 	test $count -eq $(state_count run completed) &&
-	count=`flux jobs --suppress-header --filter=running,failed | wc -l` &&
+	count=`flux jobs --no-header --filter=running,failed | wc -l` &&
 	test $count -eq $(state_count run failed) &&
-	count=`flux jobs --suppress-header --filter=running,canceled | wc -l` &&
+	count=`flux jobs --no-header --filter=running,canceled | wc -l` &&
 	test $count -eq $(state_count run canceled) &&
-	count=`flux jobs --suppress-header --filter=running,timeout | wc -l` &&
+	count=`flux jobs --no-header --filter=running,timeout | wc -l` &&
 	test $count -eq $(state_count run timeout)
 '
 
@@ -351,36 +352,36 @@ test_expect_success 'flux-jobs --filter with invalid state fails' '
 # increment userid to ensure not current user for test
 test_expect_success 'flux-jobs --user=UID works' '
 	userid=`id -u` &&
-	count=`flux jobs --suppress-header --user=${userid} | wc -l` &&
+	count=`flux jobs --no-header --user=${userid} | wc -l` &&
 	test $count -eq $(state_count active) &&
-	count=`flux jobs --suppress-header --user="+${userid}" | wc -l` &&
+	count=`flux jobs --no-header --user="+${userid}" | wc -l` &&
 	test $count -eq $(state_count active) &&
 	userid=$((userid+1)) &&
-	count=`flux jobs --suppress-header --user=${userid} | wc -l` &&
+	count=`flux jobs --no-header --user=${userid} | wc -l` &&
 	test $count -eq 0
 '
 
 test_expect_success 'flux-jobs --user=USERNAME works' '
 	username=`whoami` &&
-	count=`flux jobs --suppress-header --user=${username} | wc -l` &&
+	count=`flux jobs --no-header --user=${username} | wc -l` &&
 	test $count -eq $(state_count active)
 '
 
 test_expect_success 'flux-jobs --user with invalid username fails' '
 	username="foobarfoobaz" &&
-	test_must_fail flux jobs --suppress-header --user=${username} 2> baduser.out &&
+	test_must_fail flux jobs --no-header --user=${username} 2> baduser.out &&
 	grep "Invalid user" baduser.out
 '
 
 test_expect_success 'flux-jobs --user=all works' '
-	count=`flux jobs --suppress-header --user=all | wc -l` &&
+	count=`flux jobs --no-header --user=all | wc -l` &&
 	test $count -eq $(state_count active)
 '
 
 test_expect_success 'flux-jobs --count works' '
-	count=`flux jobs --suppress-header -a --count=0 | wc -l` &&
+	count=`flux jobs --no-header -a --count=0 | wc -l` &&
 	test $count -eq $(state_count all) &&
-	count=`flux jobs --suppress-header -a --count=8 | wc -l` &&
+	count=`flux jobs --no-header -a --count=8 | wc -l` &&
 	test $count -eq 8
 '
 
@@ -409,19 +410,19 @@ test_expect_success 'flux jobs can take specific IDs in any form' '
 '
 
 test_expect_success 'flux-jobs error on unknown IDs' '
-	flux jobs --suppress-header 0 1 2 2> ids.err &&
+	flux jobs --no-header 0 1 2 2> ids.err &&
 	count=`grep -i unknown ids.err | wc -l` &&
 	test $count -eq 3
 '
 
 test_expect_success 'flux-jobs errors with illegal IDs' '
-	test_must_fail flux jobs --suppress-header IllegalID 2> illegal_ids.err &&
+	test_must_fail flux jobs --no-header IllegalID 2> illegal_ids.err &&
 	grep "invalid JobID value" illegal_ids.err
 '
 
 test_expect_success 'flux-jobs good and bad IDs works' '
 	ids=$(state_ids sched) &&
-	flux jobs --suppress-header ${ids} 0 1 2 > ids.out 2> ids.err &&
+	flux jobs --no-header ${ids} 0 1 2 > ids.out 2> ids.err &&
 	count=`wc -l < ids.out` &&
 	test $count -eq $(state_count sched) &&
 	count=`grep -i unknown ids.err | wc -l` &&
@@ -430,7 +431,7 @@ test_expect_success 'flux-jobs good and bad IDs works' '
 
 test_expect_success 'flux-jobs ouputs warning on invalid options' '
 	ids=$(state_ids sched) &&
-	flux jobs --suppress-header -A ${ids} > warn.out 2> warn.err &&
+	flux jobs --no-header -A ${ids} > warn.out 2> warn.err &&
 	grep WARNING warn.err
 '
 
@@ -439,11 +440,11 @@ test_expect_success 'flux-jobs ouputs warning on invalid options' '
 #
 
 test_expect_success 'flux-jobs --format={id} works' '
-	flux jobs --suppress-header --filter=pending --format="{id}" > idsP.out &&
+	flux jobs --no-header --filter=pending --format="{id}" > idsP.out &&
 	test_cmp idsP.out sched.ids &&
-	flux jobs --suppress-header --filter=running --format="{id}" > idsR.out &&
+	flux jobs --no-header --filter=running --format="{id}" > idsR.out &&
 	test_cmp idsR.out run.ids &&
-	flux jobs --suppress-header --filter=inactive --format="{id}" > idsI.out &&
+	flux jobs --no-header --filter=inactive --format="{id}" > idsI.out &&
 	test_cmp idsI.out inactive.ids
 '
 
@@ -463,7 +464,7 @@ test_expect_success 'flux-jobs --format={id.f58},{id.hex},{id.dothex},{id.words}
 '
 
 test_expect_success 'flux-jobs --format={userid},{username} works' '
-	flux jobs --suppress-header -a --format="{userid},{username}" > user.out &&
+	flux jobs --no-header -a --format="{userid},{username}" > user.out &&
 	id=`id -u` &&
 	name=`whoami` &&
 	for i in `seq 1 $(state_count all)`; do
@@ -473,7 +474,7 @@ test_expect_success 'flux-jobs --format={userid},{username} works' '
 '
 
 test_expect_success 'flux-jobs --format={urgency},{priority} works' '
-	flux jobs --suppress-header -a --format="{urgency},{priority}" > urgency_priority.out &&
+	flux jobs --no-header -a --format="{urgency},{priority}" > urgency_priority.out &&
 	echo 31,4294967295 > urgency_priority.exp &&
 	echo 25,25 >> urgency_priority.exp &&
 	echo 20,20 >> urgency_priority.exp &&
@@ -689,7 +690,7 @@ test_expect_success 'flux-jobs --format={nodelist},{nodelist:h} works' '
 '
 
 # test just make sure numbers are zero or non-zero given state of job
-test_expect_success 'flux-jobs --format={t_submit/depend/sched} works' '
+test_expect_success 'flux-jobs --format={t_submit/depend} works' '
 	flux jobs -ano "{t_submit},{t_depend}" >t_SD.out &&
 	count=`cut -d, -f1 t_SD.out | grep -v "^0.0$" | wc -l` &&
 	test $count -eq $(state_count all) &&
@@ -1108,11 +1109,11 @@ grey_line_count() {
 	grep -c -o "\\u001b\[37m" $1 || true
 }
 
-for opt in "" "--color=always" "--color=auto"; do
+for opt in "" "--color" "--color=always" "--color=auto"; do
 	test_expect_success "flux-jobs $opt color works (pty)" '
 		name=${opt##--color=} &&
 		outfile=color-${name:-default}.out &&
-		$runpty flux jobs ${opt} --suppress-header -a \
+		$runpty flux jobs ${opt} --no-header -a \
 		    | grep -v "version" > $outfile &&
 		count=$(no_color_lines $outfile) &&
 		test $count -eq $(state_count sched run) &&
@@ -1126,7 +1127,7 @@ for opt in "" "--color=always" "--color=auto"; do
 done
 
 test_expect_success 'flux-jobs --color=never works (pty)' '
-	$runpty flux jobs --suppress-header --color=never -a >color_never.out &&
+	$runpty flux jobs --no-header --color=never -a >color_never.out &&
 	check_no_color color_never.out
 '
 
@@ -1134,13 +1135,13 @@ for opt in "" "--color=never"; do
 	test_expect_success "flux-jobs $opt color works (no tty)" '
 		name=${opt##--color=} &&
 		outfile=color-${name:-default}-notty.out &&
-		flux jobs ${opt} --suppress-header -a > $outfile &&
+		flux jobs ${opt} --no-header -a > $outfile &&
 		test_must_fail grep "" $outfile
 	'
 done
 
 test_expect_success 'flux-jobs: --color=always works (notty)' '
-	flux jobs --color=always --suppress-header -a > color-always-notty.out &&
+	flux jobs --color=always --no-header -a > color-always-notty.out &&
 	grep "" color-always-notty.out
 '
 
@@ -1179,7 +1180,7 @@ test_expect_success HAVE_JQ 'flux-jobs reverts username to userid for invalid id
 	test_debug "echo first invalid userid is ${id}" &&
 	printf "%s\n" $id > invalid_userid.expected &&
 	flux job list -a -c 1 | $jq -c ".userid = ${id}" |
-	  flux jobs --from-stdin --suppress-header --format="{username}" \
+	  flux jobs --from-stdin --no-header --format="{username}" \
 		> invalid_userid.output  &&
 	test_cmp invalid_userid.expected invalid_userid.output
 '
@@ -1274,7 +1275,7 @@ test_expect_success 'flux-jobs --stats-only works' '
 '
 
 test_expect_success 'cleanup job listing jobs ' '
-	flux job cancel $(cat active.ids) &&
+	flux cancel $(cat active.ids) &&
 	for jobid in `cat active.ids`; do
 		fj_wait_event $jobid clean;
 	done

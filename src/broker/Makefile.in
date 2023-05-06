@@ -92,7 +92,6 @@ host_triplet = @host@
 target_triplet = @target@
 fluxcmd_PROGRAMS = flux-broker$(EXEEXT)
 TESTS = test_attr.t$(EXEEXT) test_service.t$(EXEEXT) \
-	test_liblist.t$(EXEEXT) test_pmiutil.t$(EXEEXT) \
 	test_boot_config.t$(EXEEXT) test_runat.t$(EXEEXT) \
 	test_overlay.t$(EXEEXT) test_topology.t$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
@@ -121,7 +120,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -138,15 +136,14 @@ am_libbroker_la_OBJECTS = brokercfg.lo module.lo modservice.lo \
 	overlay.lo service.lo attr.lo log.lo content-cache.lo \
 	content-checkpoint.lo content-mmap.lo runat.lo \
 	state_machine.lo heaptrace.lo exec.lo ping.lo rusage.lo \
-	boot_config.lo boot_pmi.lo pmiutil.lo liblist.lo publisher.lo \
-	groups.lo shutdown.lo topology.lo
+	boot_config.lo boot_pmi.lo publisher.lo groups.lo shutdown.lo \
+	topology.lo
 libbroker_la_OBJECTS = $(am_libbroker_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am__EXEEXT_1 = test_attr.t$(EXEEXT) test_service.t$(EXEEXT) \
-	test_liblist.t$(EXEEXT) test_pmiutil.t$(EXEEXT) \
 	test_boot_config.t$(EXEEXT) test_runat.t$(EXEEXT) \
 	test_overlay.t$(EXEEXT) test_topology.t$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(fluxcmddir)"
@@ -157,12 +154,14 @@ am__DEPENDENCIES_1 =
 flux_broker_DEPENDENCIES = $(builddir)/libbroker.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
+	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 flux_broker_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(flux_broker_LDFLAGS) $(LDFLAGS) -o $@
@@ -173,11 +172,9 @@ am__DEPENDENCIES_2 = $(builddir)/libbroker.la \
 	$(top_builddir)/src/common/libtestutil/libtestutil.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
-	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libtap/libtap.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 test_attr_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
 test_attr_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -190,26 +187,12 @@ test_boot_config_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(test_boot_config_t_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_test_liblist_t_OBJECTS = test/test_liblist_t-liblist.$(OBJEXT)
-test_liblist_t_OBJECTS = $(am_test_liblist_t_OBJECTS)
-test_liblist_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
-test_liblist_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(test_liblist_t_LDFLAGS) $(LDFLAGS) -o \
-	$@
 am_test_overlay_t_OBJECTS = test/test_overlay_t-overlay.$(OBJEXT)
 test_overlay_t_OBJECTS = $(am_test_overlay_t_OBJECTS)
 test_overlay_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
 test_overlay_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(test_overlay_t_LDFLAGS) $(LDFLAGS) -o \
-	$@
-am_test_pmiutil_t_OBJECTS = test/test_pmiutil_t-pmiutil.$(OBJEXT)
-test_pmiutil_t_OBJECTS = $(am_test_pmiutil_t_OBJECTS)
-test_pmiutil_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
-test_pmiutil_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(test_pmiutil_t_LDFLAGS) $(LDFLAGS) -o \
 	$@
 am_test_runat_t_OBJECTS = test/test_runat_t-runat.$(OBJEXT)
 test_runat_t_OBJECTS = $(am_test_runat_t_OBJECTS)
@@ -267,13 +250,11 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libbroker_la_SOURCES) $(flux_broker_SOURCES) \
 	$(test_attr_t_SOURCES) $(test_boot_config_t_SOURCES) \
-	$(test_liblist_t_SOURCES) $(test_overlay_t_SOURCES) \
-	$(test_pmiutil_t_SOURCES) $(test_runat_t_SOURCES) \
+	$(test_overlay_t_SOURCES) $(test_runat_t_SOURCES) \
 	$(test_service_t_SOURCES) $(test_topology_t_SOURCES)
 DIST_SOURCES = $(libbroker_la_SOURCES) $(flux_broker_SOURCES) \
 	$(test_attr_t_SOURCES) $(test_boot_config_t_SOURCES) \
-	$(test_liblist_t_SOURCES) $(test_overlay_t_SOURCES) \
-	$(test_pmiutil_t_SOURCES) $(test_runat_t_SOURCES) \
+	$(test_overlay_t_SOURCES) $(test_runat_t_SOURCES) \
 	$(test_service_t_SOURCES) $(test_topology_t_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
@@ -612,8 +593,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -759,7 +738,6 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/src/include \
 	-I$(top_srcdir)/src/common/libccan \
 	-I$(top_builddir)/src/common/libflux \
-	$(PMIX_CFLAGS) \
 	$(ZMQ_CFLAGS) \
 	$(LIBUUID_CFLAGS) \
 	$(JANSSON_CFLAGS) \
@@ -807,10 +785,6 @@ libbroker_la_SOURCES = \
 	boot_config.c \
 	boot_pmi.h \
 	boot_pmi.c \
-	pmiutil.h \
-	pmiutil.c \
-	liblist.h \
-	liblist.c \
 	publisher.h \
 	publisher.c \
 	groups.h \
@@ -824,13 +798,15 @@ flux_broker_LDADD = \
 	$(builddir)/libbroker.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
+	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
 	$(ZMQ_LIBS) \
 	$(LIBUUID_LIBS) \
 	$(JANSSON_LIBS) \
-	$(PMIX_LIBS) \
 	$(LIBDL)
 
 flux_broker_LDFLAGS = 
@@ -839,12 +815,10 @@ test_ldadd = \
 	$(top_builddir)/src/common/libtestutil/libtestutil.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
-	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libtap/libtap.la \
 	$(ZMQ_LIBS) \
-	$(JANSSON_LIBS) \
-	$(PMIX_LIBS)
+	$(JANSSON_LIBS)
 
 test_ldflags = \
 	-no-install
@@ -865,14 +839,6 @@ test_service_t_SOURCES = test/service.c
 test_service_t_CPPFLAGS = $(test_cppflags)
 test_service_t_LDADD = $(test_ldadd)
 test_service_t_LDFLAGS = $(test_ldflags)
-test_liblist_t_SOURCES = test/liblist.c
-test_liblist_t_CPPFLAGS = $(test_cppflags)
-test_liblist_t_LDADD = $(test_ldadd)
-test_liblist_t_LDFLAGS = $(test_ldflags)
-test_pmiutil_t_SOURCES = test/pmiutil.c
-test_pmiutil_t_CPPFLAGS = $(test_cppflags)
-test_pmiutil_t_LDADD = $(test_ldadd)
-test_pmiutil_t_LDFLAGS = $(test_ldflags)
 test_boot_config_t_SOURCES = test/boot_config.c
 test_boot_config_t_CPPFLAGS = $(test_cppflags)
 test_boot_config_t_LDADD = $(test_ldadd)
@@ -1016,24 +982,12 @@ test/test_boot_config_t-boot_config.$(OBJEXT): test/$(am__dirstamp) \
 test_boot_config.t$(EXEEXT): $(test_boot_config_t_OBJECTS) $(test_boot_config_t_DEPENDENCIES) $(EXTRA_test_boot_config_t_DEPENDENCIES) 
 	@rm -f test_boot_config.t$(EXEEXT)
 	$(AM_V_CCLD)$(test_boot_config_t_LINK) $(test_boot_config_t_OBJECTS) $(test_boot_config_t_LDADD) $(LIBS)
-test/test_liblist_t-liblist.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_liblist.t$(EXEEXT): $(test_liblist_t_OBJECTS) $(test_liblist_t_DEPENDENCIES) $(EXTRA_test_liblist_t_DEPENDENCIES) 
-	@rm -f test_liblist.t$(EXEEXT)
-	$(AM_V_CCLD)$(test_liblist_t_LINK) $(test_liblist_t_OBJECTS) $(test_liblist_t_LDADD) $(LIBS)
 test/test_overlay_t-overlay.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
 test_overlay.t$(EXEEXT): $(test_overlay_t_OBJECTS) $(test_overlay_t_DEPENDENCIES) $(EXTRA_test_overlay_t_DEPENDENCIES) 
 	@rm -f test_overlay.t$(EXEEXT)
 	$(AM_V_CCLD)$(test_overlay_t_LINK) $(test_overlay_t_OBJECTS) $(test_overlay_t_LDADD) $(LIBS)
-test/test_pmiutil_t-pmiutil.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_pmiutil.t$(EXEEXT): $(test_pmiutil_t_OBJECTS) $(test_pmiutil_t_DEPENDENCIES) $(EXTRA_test_pmiutil_t_DEPENDENCIES) 
-	@rm -f test_pmiutil.t$(EXEEXT)
-	$(AM_V_CCLD)$(test_pmiutil_t_LINK) $(test_pmiutil_t_OBJECTS) $(test_pmiutil_t_LDADD) $(LIBS)
 test/test_runat_t-runat.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
@@ -1071,13 +1025,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/exec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/groups.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/heaptrace.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/liblist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/modservice.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/overlay.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pmiutil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/publisher.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/runat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rusage.Plo@am__quote@
@@ -1087,9 +1039,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/topology.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_attr_t-attr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_boot_config_t-boot_config.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_liblist_t-liblist.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_overlay_t-overlay.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_pmiutil_t-pmiutil.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_runat_t-runat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_service_t-service.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_topology_t-topology.Po@am__quote@
@@ -1146,20 +1096,6 @@ test/test_boot_config_t-boot_config.obj: test/boot_config.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_boot_config_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_boot_config_t-boot_config.obj `if test -f 'test/boot_config.c'; then $(CYGPATH_W) 'test/boot_config.c'; else $(CYGPATH_W) '$(srcdir)/test/boot_config.c'; fi`
 
-test/test_liblist_t-liblist.o: test/liblist.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_liblist_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_liblist_t-liblist.o -MD -MP -MF test/$(DEPDIR)/test_liblist_t-liblist.Tpo -c -o test/test_liblist_t-liblist.o `test -f 'test/liblist.c' || echo '$(srcdir)/'`test/liblist.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_liblist_t-liblist.Tpo test/$(DEPDIR)/test_liblist_t-liblist.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/liblist.c' object='test/test_liblist_t-liblist.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_liblist_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_liblist_t-liblist.o `test -f 'test/liblist.c' || echo '$(srcdir)/'`test/liblist.c
-
-test/test_liblist_t-liblist.obj: test/liblist.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_liblist_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_liblist_t-liblist.obj -MD -MP -MF test/$(DEPDIR)/test_liblist_t-liblist.Tpo -c -o test/test_liblist_t-liblist.obj `if test -f 'test/liblist.c'; then $(CYGPATH_W) 'test/liblist.c'; else $(CYGPATH_W) '$(srcdir)/test/liblist.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_liblist_t-liblist.Tpo test/$(DEPDIR)/test_liblist_t-liblist.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/liblist.c' object='test/test_liblist_t-liblist.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_liblist_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_liblist_t-liblist.obj `if test -f 'test/liblist.c'; then $(CYGPATH_W) 'test/liblist.c'; else $(CYGPATH_W) '$(srcdir)/test/liblist.c'; fi`
-
 test/test_overlay_t-overlay.o: test/overlay.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_overlay_t-overlay.o -MD -MP -MF test/$(DEPDIR)/test_overlay_t-overlay.Tpo -c -o test/test_overlay_t-overlay.o `test -f 'test/overlay.c' || echo '$(srcdir)/'`test/overlay.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_overlay_t-overlay.Tpo test/$(DEPDIR)/test_overlay_t-overlay.Po
@@ -1173,20 +1109,6 @@ test/test_overlay_t-overlay.obj: test/overlay.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/overlay.c' object='test/test_overlay_t-overlay.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_overlay_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_overlay_t-overlay.obj `if test -f 'test/overlay.c'; then $(CYGPATH_W) 'test/overlay.c'; else $(CYGPATH_W) '$(srcdir)/test/overlay.c'; fi`
-
-test/test_pmiutil_t-pmiutil.o: test/pmiutil.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_pmiutil_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_pmiutil_t-pmiutil.o -MD -MP -MF test/$(DEPDIR)/test_pmiutil_t-pmiutil.Tpo -c -o test/test_pmiutil_t-pmiutil.o `test -f 'test/pmiutil.c' || echo '$(srcdir)/'`test/pmiutil.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_pmiutil_t-pmiutil.Tpo test/$(DEPDIR)/test_pmiutil_t-pmiutil.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/pmiutil.c' object='test/test_pmiutil_t-pmiutil.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_pmiutil_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_pmiutil_t-pmiutil.o `test -f 'test/pmiutil.c' || echo '$(srcdir)/'`test/pmiutil.c
-
-test/test_pmiutil_t-pmiutil.obj: test/pmiutil.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_pmiutil_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_pmiutil_t-pmiutil.obj -MD -MP -MF test/$(DEPDIR)/test_pmiutil_t-pmiutil.Tpo -c -o test/test_pmiutil_t-pmiutil.obj `if test -f 'test/pmiutil.c'; then $(CYGPATH_W) 'test/pmiutil.c'; else $(CYGPATH_W) '$(srcdir)/test/pmiutil.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_pmiutil_t-pmiutil.Tpo test/$(DEPDIR)/test_pmiutil_t-pmiutil.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/pmiutil.c' object='test/test_pmiutil_t-pmiutil.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_pmiutil_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_pmiutil_t-pmiutil.obj `if test -f 'test/pmiutil.c'; then $(CYGPATH_W) 'test/pmiutil.c'; else $(CYGPATH_W) '$(srcdir)/test/pmiutil.c'; fi`
 
 test/test_runat_t-runat.o: test/runat.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_runat_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_runat_t-runat.o -MD -MP -MF test/$(DEPDIR)/test_runat_t-runat.Tpo -c -o test/test_runat_t-runat.o `test -f 'test/runat.c' || echo '$(srcdir)/'`test/runat.c

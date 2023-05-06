@@ -13,7 +13,7 @@ test_under_flux 1 job
 flux setattr log-stderr-level 1
 
 test_expect_success 'job-manager: submit 5 jobs' '
-        flux mini submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
+        flux submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
            hostname
 '
 
@@ -56,7 +56,7 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs in flux-jobs (RRSSS)' '
 '
 
 test_expect_success 'job-manager: cancel 2' '
-        flux job cancel $(cat job2.id)
+        flux cancel $(cat job2.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RIRSS' '
@@ -110,8 +110,8 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs in flux-jobs (RIRSS)' '
 # cancel non-running jobs first, to ensure they are not accidentally run when
 # running jobs free resources.
 test_expect_success 'job-manager: cancel all jobs' '
-        flux job cancelall --states=SCHED -f &&
-        flux job cancelall -f
+        flux cancel --all --states=pending &&
+        flux cancel --all
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IIIII' '

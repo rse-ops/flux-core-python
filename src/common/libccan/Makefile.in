@@ -114,7 +114,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -128,9 +127,9 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 libccan_la_LIBADD =
 am__dirstamp = $(am__leading_dot)dirstamp
-am_libccan_la_OBJECTS = ccan/str/str.lo ccan/str/debug.lo \
-	ccan/str/hex/hex.lo ccan/list/list.lo ccan/base64/base64.lo \
-	ccan/bitmap/bitmap.lo
+am_libccan_la_OBJECTS = ccan/pushpull/pull.lo ccan/pushpull/push.lo \
+	ccan/str/str.lo ccan/str/debug.lo ccan/str/hex/hex.lo \
+	ccan/list/list.lo ccan/base64/base64.lo ccan/bitmap/bitmap.lo
 libccan_la_OBJECTS = $(am_libccan_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -310,8 +309,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -456,6 +453,11 @@ AM_CPPFLAGS =
 noinst_LTLIBRARIES = libccan.la
 libccan_la_SOURCES = \
 	ccan/check_type/check_type.h \
+	ccan/pushpull/pull.c \
+	ccan/pushpull/pull.h \
+	ccan/pushpull/push.c \
+	ccan/pushpull/push.h \
+	ccan/pushpull/pushpull.h \
 	ccan/str/str.c \
 	ccan/str/debug.c \
 	ccan/str/str.h \
@@ -519,6 +521,16 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+ccan/pushpull/$(am__dirstamp):
+	@$(MKDIR_P) ccan/pushpull
+	@: > ccan/pushpull/$(am__dirstamp)
+ccan/pushpull/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ccan/pushpull/$(DEPDIR)
+	@: > ccan/pushpull/$(DEPDIR)/$(am__dirstamp)
+ccan/pushpull/pull.lo: ccan/pushpull/$(am__dirstamp) \
+	ccan/pushpull/$(DEPDIR)/$(am__dirstamp)
+ccan/pushpull/push.lo: ccan/pushpull/$(am__dirstamp) \
+	ccan/pushpull/$(DEPDIR)/$(am__dirstamp)
 ccan/str/$(am__dirstamp):
 	@$(MKDIR_P) ccan/str
 	@: > ccan/str/$(am__dirstamp)
@@ -573,6 +585,8 @@ mostlyclean-compile:
 	-rm -f ccan/bitmap/*.lo
 	-rm -f ccan/list/*.$(OBJEXT)
 	-rm -f ccan/list/*.lo
+	-rm -f ccan/pushpull/*.$(OBJEXT)
+	-rm -f ccan/pushpull/*.lo
 	-rm -f ccan/str/*.$(OBJEXT)
 	-rm -f ccan/str/*.lo
 	-rm -f ccan/str/hex/*.$(OBJEXT)
@@ -584,6 +598,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/base64/$(DEPDIR)/base64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/bitmap/$(DEPDIR)/bitmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/list/$(DEPDIR)/list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ccan/pushpull/$(DEPDIR)/pull.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ccan/pushpull/$(DEPDIR)/push.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/str/$(DEPDIR)/debug.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/str/$(DEPDIR)/str.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ccan/str/hex/$(DEPDIR)/hex.Plo@am__quote@
@@ -620,6 +636,7 @@ clean-libtool:
 	-rm -rf ccan/base64/.libs ccan/base64/_libs
 	-rm -rf ccan/bitmap/.libs ccan/bitmap/_libs
 	-rm -rf ccan/list/.libs ccan/list/_libs
+	-rm -rf ccan/pushpull/.libs ccan/pushpull/_libs
 	-rm -rf ccan/str/.libs ccan/str/_libs
 	-rm -rf ccan/str/hex/.libs ccan/str/hex/_libs
 
@@ -741,6 +758,8 @@ distclean-generic:
 	-rm -f ccan/bitmap/$(am__dirstamp)
 	-rm -f ccan/list/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ccan/list/$(am__dirstamp)
+	-rm -f ccan/pushpull/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ccan/pushpull/$(am__dirstamp)
 	-rm -f ccan/str/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ccan/str/$(am__dirstamp)
 	-rm -f ccan/str/hex/$(DEPDIR)/$(am__dirstamp)
@@ -755,7 +774,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ccan/base64/$(DEPDIR) ccan/bitmap/$(DEPDIR) ccan/list/$(DEPDIR) ccan/str/$(DEPDIR) ccan/str/hex/$(DEPDIR)
+	-rm -rf ccan/base64/$(DEPDIR) ccan/bitmap/$(DEPDIR) ccan/list/$(DEPDIR) ccan/pushpull/$(DEPDIR) ccan/str/$(DEPDIR) ccan/str/hex/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -801,7 +820,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ccan/base64/$(DEPDIR) ccan/bitmap/$(DEPDIR) ccan/list/$(DEPDIR) ccan/str/$(DEPDIR) ccan/str/hex/$(DEPDIR)
+	-rm -rf ccan/base64/$(DEPDIR) ccan/bitmap/$(DEPDIR) ccan/list/$(DEPDIR) ccan/pushpull/$(DEPDIR) ccan/str/$(DEPDIR) ccan/str/hex/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -21,12 +21,14 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <ctype.h>
 #include <pwd.h>
 #include <assert.h>
 #include <locale.h>
 #include <jansson.h>
 #include <argz.h>
+#include <sys/ioctl.h>
 #include <flux/core.h>
 #include <flux/optparse.h>
 #include <flux/hostlist.h>
@@ -43,6 +45,7 @@
 #include "src/common/libjob/unwrap.h"
 #include "src/common/libutil/read_all.h"
 #include "src/common/libutil/monotime.h"
+#include "src/common/libutil/fsd.h"
 #include "src/common/libidset/idset.h"
 #include "src/common/libeventlog/eventlog.h"
 #include "src/common/libioencode/ioencode.h"
@@ -99,6 +102,8 @@ int cmd_wait (optparse_t *p, int argc, char **argv);
 int cmd_memo (optparse_t *p, int argc, char **argv);
 int cmd_purge (optparse_t *p, int argc, char **argv);
 int cmd_taskmap (optparse_t *p, int argc, char **argv);
+int cmd_timeleft (optparse_t *p, int argc, char **argv);
+int cmd_last (optparse_t *p, int argc, char **argv);
 
 int stdin_flags;
 
@@ -245,6 +250,10 @@ static struct optparse_option attach_opts[] =  {
     { .name = "show-exec", .key = 'X', .has_arg = 0,
       .usage = "Show exec events on stderr",
     },
+    {
+      .name = "show-status", .has_arg = 0,
+      .usage = "Show job status line while pending",
+    },
     { .name = "wait-event", .key = 'w', .has_arg = 1, .arginfo = "NAME",
       .usage = "Wait for event NAME before detaching from eventlog "
                "(default=finish)"
@@ -260,6 +269,12 @@ static struct optparse_option attach_opts[] =  {
     },
     { .name = "read-only", .key = 'r', .has_arg = 0,
       .usage = "Disable reading stdin and capturing signals",
+    },
+    { .name = "unbuffered", .key = 'u', .has_arg = 0,
+      .usage = "Disable buffering of stdin",
+    },
+    { .name = "stdin-ranks", .key = 'i', .has_arg = 1, .arginfo = "RANKS",
+      .usage = "Send standard input to only RANKS (default: all)"
     },
     { .name = "debug", .has_arg = 0,
       .usage = "Enable parallel debugger to attach to a running job",
@@ -395,6 +410,14 @@ static struct optparse_option taskmap_opts[] = {
       .usage = "Convert an RFC 34 taskmap to another format "
                "(FORMAT can be raw, pmi, or multiline)",
     },
+    OPTPARSE_TABLE_END
+};
+
+static struct optparse_option timeleft_opts[] = {
+    { .name = "human", .key = 'H', .has_arg = 0,
+      .usage = "Output in Flux Standard Duration instead of seconds.",
+    },
+    OPTPARSE_TABLE_END
 };
 
 static struct optparse_subcommand subcommands[] = {
@@ -552,6 +575,20 @@ static struct optparse_subcommand subcommands[] = {
       cmd_taskmap,
       0,
       taskmap_opts,
+    },
+    { "timeleft",
+      "[JOBID]",
+      "Find remaining runtime for job or enclosing instance",
+      cmd_timeleft,
+      0,
+      timeleft_opts,
+    },
+    { "last",
+      "SLICE",
+      "List my most recently submitted job id(s)",
+      cmd_last,
+      0,
+      NULL,
     },
     { "purge",
       "[--age-limit=FSD] [--num-limit=N]",
@@ -1550,6 +1587,8 @@ struct attach_ctx {
     int exit_code;
     flux_jobid_t id;
     bool readonly;
+    bool unbuffered;
+    char *stdin_ranks;
     const char *jobid;
     const char *wait_event;
     flux_future_t *eventlog_f;
@@ -1557,6 +1596,7 @@ struct attach_ctx {
     flux_future_t *output_f;
     flux_watcher_t *sigint_w;
     flux_watcher_t *sigtstp_w;
+    flux_watcher_t *notify_timer;
     struct flux_pty_client *pty_client;
     struct timespec t_sigint;
     flux_watcher_t *stdin_w;
@@ -1568,6 +1608,8 @@ struct attach_ctx {
     char *service;
     double timestamp_zero;
     int eventlog_watch_count;
+    bool statusline;
+    char *last_event;
 };
 
 void attach_completed_check (struct attach_ctx *ctx)
@@ -1854,6 +1896,7 @@ static void attach_send_shell_completion (flux_future_t *f, void *arg)
 }
 
 static int attach_send_shell (struct attach_ctx *ctx,
+                              const char *ranks,
                               const void *buf,
                               int len,
                               bool eof)
@@ -1865,7 +1908,7 @@ static int attach_send_shell (struct attach_ctx *ctx,
     int rc = -1;
 
     snprintf (topic, sizeof (topic), "%s.stdin", ctx->service);
-    if (!(context = ioencode ("stdin", "all", buf, len, eof)))
+    if (!(context = ioencode ("stdin", ranks, buf, len, eof)))
         goto error;
     if (!(f = flux_rpc_pack (ctx->h, topic, ctx->leader_rank, 0, "O", context)))
         goto error;
@@ -1889,36 +1932,21 @@ void attach_stdin_cb (flux_reactor_t *r, flux_watcher_t *w,
                       int revents, void *arg)
 {
     struct attach_ctx *ctx = arg;
-    flux_buffer_t *fb;
     const char *ptr;
     int len;
 
-    fb = flux_buffer_read_watcher_get_buffer (w);
-    assert (fb);
-
-    if (!(ptr = flux_buffer_read_line (fb, &len)))
+    if (!(ptr = flux_buffer_read_watcher_get_data (w, &len)))
         log_err_exit ("flux_buffer_read_line on stdin");
-
     if (len > 0) {
-        if (attach_send_shell (ctx, ptr, len, false) < 0)
+        if (attach_send_shell (ctx, ctx->stdin_ranks, ptr, len, false) < 0)
             log_err_exit ("attach_send_shell");
         ctx->stdin_data_sent = true;
     }
     else {
-        /* possibly left over data before EOF */
-        if (!(ptr = flux_buffer_read (fb, -1, &len)))
-            log_err_exit ("flux_buffer_read on stdin");
-
-        if (len > 0) {
-            if (attach_send_shell (ctx, ptr, len, false) < 0)
-                log_err_exit ("attach_send_shell");
-            ctx->stdin_data_sent = true;
-        }
-        else {
-            if (attach_send_shell (ctx, NULL, 0, true) < 0)
-                log_err_exit ("attach_send_shell");
-            flux_watcher_stop (ctx->stdin_w);
-        }
+        /* EOF */
+        if (attach_send_shell (ctx, ctx->stdin_ranks, NULL, 0, true) < 0)
+            log_err_exit ("attach_send_shell");
+        flux_watcher_stop (ctx->stdin_w);
     }
 }
 
@@ -2034,9 +2062,13 @@ static void setup_mpir_interface (struct attach_ctx *ctx, json_t *context)
 static void attach_setup_stdin (struct attach_ctx *ctx)
 {
     flux_watcher_t *w;
+    int flags = 0;
 
     if (ctx->readonly)
         return;
+
+    if (!ctx->unbuffered)
+        flags = FLUX_WATCHER_LINE_BUFFER;
 
     /* flux_buffer_read_watcher_create() requires O_NONBLOCK on
      * stdin */
@@ -2052,7 +2084,7 @@ static void attach_setup_stdin (struct attach_ctx *ctx)
                                          STDIN_FILENO,
                                          1 << 20,
                                          attach_stdin_cb,
-                                         FLUX_WATCHER_LINE_BUFFER,
+                                         flags,
                                          ctx);
     if (!w)
         log_err_exit ("flux_buffer_read_watcher_create");
@@ -2061,7 +2093,14 @@ static void attach_setup_stdin (struct attach_ctx *ctx)
         log_err_exit ("zlist_new");
 
     ctx->stdin_w = w;
-    flux_watcher_start (ctx->stdin_w);
+
+    /*  Start stdin watcher only if --stdin-ranks=all (the default).
+     *  Otherwise, the watcher will be started in close_stdin_ranks()
+     *  after the idset of targeted ranks is adjusted based on the job
+     *  taskmap.
+     */
+    if (streq (ctx->stdin_ranks, "all"))
+        flux_watcher_start (ctx->stdin_w);
 }
 
 static void pty_client_exit_cb (struct flux_pty_client *c, void *arg)
@@ -2169,6 +2208,89 @@ void handle_exec_log_msg (struct attach_ctx *ctx, double ts, json_t *context)
     fwrite (data, len, 1, stderr);
 }
 
+static struct idset *all_taskids (const struct taskmap *map)
+{
+    struct idset *ids;
+    if (!(ids = idset_create (0, IDSET_FLAG_AUTOGROW)))
+        return NULL;
+    if (idset_range_set (ids, 0, taskmap_total_ntasks (map) - 1) < 0) {
+        idset_destroy (ids);
+        return NULL;
+    }
+    return ids;
+}
+
+static void adjust_stdin_ranks (struct attach_ctx *ctx,
+                                struct idset *stdin_ranks,
+                                struct idset *all_ranks)
+{
+    struct idset *isect = idset_intersect (all_ranks, stdin_ranks);
+    if (!isect) {
+        log_err ("failed to get intersection of stdin ranks and all taskids");
+        return;
+    }
+    if (!idset_equal (stdin_ranks, isect)) {
+        char *new = idset_encode (isect, IDSET_FLAG_RANGE);
+        if (!new) {
+            log_err ("unable to adjust stdin-ranks to job");
+            goto out;
+        }
+        log_msg ("warning: adjusting --stdin-ranks from %s to %s",
+                 ctx->stdin_ranks,
+                 new);
+        free (ctx->stdin_ranks);
+        ctx->stdin_ranks = new;
+    }
+out:
+    idset_destroy (isect);
+}
+
+static void handle_stdin_ranks (struct attach_ctx *ctx, json_t *context)
+{
+    flux_error_t error;
+    json_t *omap;
+    struct taskmap *map = NULL;
+    struct idset *open = NULL;
+    struct idset *to_close = NULL;
+    struct idset *isect = NULL;
+    char *ranks = NULL;
+
+    if (streq (ctx->stdin_ranks, "all"))
+        return;
+    if (!(omap = json_object_get (context, "taskmap"))
+        || !(map = taskmap_decode_json (omap, &error))
+        || !(to_close = all_taskids (map))) {
+        log_msg ("failed to process taskmap in shell.start event");
+        goto out;
+    }
+    if (!(open = idset_decode (ctx->stdin_ranks))) {
+        log_err ("failed to decode stdin ranks (%s)", ctx->stdin_ranks);
+        goto out;
+    }
+    /* Ensure that stdin_ranks is a subset of all ranks
+     */
+    adjust_stdin_ranks (ctx, open, to_close);
+
+    if (idset_subtract (to_close, open) < 0
+        || !(ranks = idset_encode (to_close, IDSET_FLAG_RANGE))) {
+        log_err ("unable to close stdin on non-targeted ranks");
+        goto out;
+    }
+    if (attach_send_shell (ctx, ranks, NULL, 0, true) < 0)
+        log_err ("failed to close stdin for %s", ranks);
+
+    /*  Start watching stdin now that ctx->stdin_ranks has been
+     *  validated.
+     */
+    flux_watcher_start (ctx->stdin_w);
+out:
+    taskmap_destroy (map);
+    idset_destroy (open);
+    idset_destroy (to_close);
+    idset_destroy (isect);
+    free (ranks);
+}
+
 /* Handle an event in the guest.exec eventlog.
  * This is a stream of responses, one response per event, terminated with
  * an ENODATA error response (or another error if something went wrong).
@@ -2231,6 +2353,7 @@ void attach_exec_event_continuation (flux_future_t *f, void *arg)
     } else if (streq (name, "shell.start")) {
         if (MPIR_being_debugged)
             setup_mpir_interface (ctx, context);
+        handle_stdin_ranks (ctx, context);
     }
     else if (streq (name, "log")) {
         handle_exec_log_msg (ctx, timestamp, context);
@@ -2262,6 +2385,101 @@ done:
     attach_completed_check (ctx);
 }
 
+struct job_event_notifications {
+    const char *event;
+    const char *msg;
+};
+
+static struct job_event_notifications attach_notifications[] = {
+    { "validate",
+      "resolving dependencies",
+    },
+    { "depend",
+      "waiting for priority assignment",
+    },
+    { "priority",
+      "waiting for resources",
+    },
+    { "alloc",
+      "starting",
+    },
+    { "prolog-start",
+      "waiting for job prolog",
+    },
+    { "prolog-finish",
+      "starting",
+    },
+    { "start",
+      "started"
+    },
+    { "exception",
+      "canceling due to exception",
+    },
+    { NULL, NULL},
+};
+
+static const char *job_event_notify_string (const char *name)
+{
+    struct job_event_notifications *t = attach_notifications;
+    while (t->event) {
+        if (streq (t->event, name))
+            return t->msg;
+        t++;
+    }
+    return NULL;
+}
+
+static void attach_notify (struct attach_ctx *ctx,
+                           const char *event_name,
+                           double ts)
+{
+    const char *msg;
+    if (!event_name)
+        return;
+    if (ctx->statusline
+        && (msg = job_event_notify_string (event_name))) {
+        int dt = ts - ctx->timestamp_zero;
+        int width = 80;
+        struct winsize w;
+
+        /* Adjust width of status so timer is right justified:
+         */
+        if (ioctl(0, TIOCGWINSZ, &w) == 0)
+            width = w.ws_col;
+        width -= 10 + strlen (ctx->jobid) + 10;
+
+        fprintf (stderr,
+                 "\rflux-job: %s %-*s %02d:%02d:%02d\r",
+                 ctx->jobid,
+                 width,
+                 msg,
+                 dt/3600,
+                 (dt/60) % 60,
+                 dt % 60);
+    }
+    if (streq (event_name, "start")
+        || streq (event_name, "clean")) {
+        if (ctx->statusline) {
+            fprintf (stderr, "\n");
+            ctx->statusline = false;
+        }
+        flux_watcher_stop (ctx->notify_timer);
+    }
+    if (!ctx->last_event || !streq (event_name, ctx->last_event)) {
+        free (ctx->last_event);
+        ctx->last_event = strdup (event_name);
+    }
+}
+
+void attach_notify_cb (flux_reactor_t *r, flux_watcher_t *w,
+                       int revents, void *arg)
+{
+    struct attach_ctx *ctx = arg;
+    ctx->statusline = true;
+    attach_notify (ctx, ctx->last_event, flux_reactor_time ());
+}
+
+
 /* Handle an event in the main job eventlog.
  * This is a stream of responses, one response per event, terminated with
  * an ENODATA error response (or another error if something went wrong).
@@ -2274,7 +2492,7 @@ void attach_event_continuation (flux_future_t *f, void *arg)
 {
     struct attach_ctx *ctx = arg;
     const char *entry;
-    json_t *o;
+    json_t *o = NULL;
     double timestamp;
     const char *name;
     json_t *context;
@@ -2295,6 +2513,8 @@ void attach_event_continuation (flux_future_t *f, void *arg)
 
     if (ctx->timestamp_zero == 0.)
         ctx->timestamp_zero = timestamp;
+
+    attach_notify (ctx, name, timestamp);
 
     if (streq (name, "exception")) {
         const char *type;
@@ -2372,10 +2592,23 @@ void attach_event_continuation (flux_future_t *f, void *arg)
     flux_future_reset (f);
     return;
 done:
+    json_decref (o);
     flux_future_destroy (f);
     ctx->eventlog_f = NULL;
     ctx->eventlog_watch_count--;
     attach_completed_check (ctx);
+}
+
+static char *get_stdin_ranks (optparse_t *p)
+{
+    const char *value = optparse_get_str (p, "stdin-ranks", "all");
+    if (!streq (value, "all")) {
+        struct idset *ids;
+        if (!(ids = idset_decode (value)))
+            log_err_exit ("Invalid value '%s' for --stdin-ranks", value);
+        idset_destroy (ids);
+    }
+    return strdup (value);
 }
 
 int cmd_attach (optparse_t *p, int argc, char **argv)
@@ -2395,6 +2628,11 @@ int cmd_attach (optparse_t *p, int argc, char **argv)
     ctx.id = parse_jobid (ctx.jobid);
     ctx.p = p;
     ctx.readonly = optparse_hasopt (p, "read-only");
+    ctx.unbuffered = optparse_hasopt (p, "unbuffered");
+
+    if (optparse_hasopt (p, "stdin-ranks") && ctx.readonly)
+        log_msg_exit ("Do not use --stdin-ranks with --read-only");
+    ctx.stdin_ranks = get_stdin_ranks (p);
 
     if (!(ctx.h = flux_open (NULL, 0)))
         log_err_exit ("flux_open");
@@ -2466,6 +2704,29 @@ int cmd_attach (optparse_t *p, int argc, char **argv)
         flux_watcher_start (ctx.sigint_w);
     }
 
+    ctx.statusline = optparse_hasopt (ctx.p, "show-status");
+    if ((isatty (STDIN_FILENO) || ctx.statusline)
+        && !optparse_hasopt (ctx.p, "show-events")) {
+        /*
+         * If flux-job is running interactively, and the job has not
+         * started within 2s, then display a status line notifying the
+         * user of the job's status. The timer repeats every second after
+         * the initial callback to update a clock displayed on the rhs of
+         * the status line.
+         *
+         * The timer is automatically stopped after the 'start' or 'clean'
+         * event.
+         */
+        ctx.notify_timer = flux_timer_watcher_create (r,
+                                                      ctx.statusline ? 0.:2.,
+                                                      1.,
+                                                      attach_notify_cb,
+                                                      &ctx);
+        if (!ctx.notify_timer)
+            log_err ("Failed to start notification timer");
+        flux_watcher_start (ctx.notify_timer);
+    }
+
     if (flux_reactor_run (r, 0) < 0)
         log_err_exit ("flux_reactor_run");
 
@@ -2473,10 +2734,13 @@ int cmd_attach (optparse_t *p, int argc, char **argv)
     flux_watcher_destroy (ctx.sigint_w);
     flux_watcher_destroy (ctx.sigtstp_w);
     flux_watcher_destroy (ctx.stdin_w);
+    flux_watcher_destroy (ctx.notify_timer);
     flux_pty_client_destroy (ctx.pty_client);
     flux_close (ctx.h);
     free (ctx.service);
     free (totalview_jobid);
+    free (ctx.last_event);
+    free (ctx.stdin_ranks);
     return ctx.exit_code;
 }
 
@@ -3532,6 +3796,104 @@ int cmd_taskmap (optparse_t *p, int argc, char **argv)
     printf ("%s\n", s);
     free (s);
     taskmap_destroy (map);
+    return 0;
+}
+
+int cmd_timeleft (optparse_t *p, int argc, char **argv)
+{
+    int optindex = optparse_option_index (p);
+    flux_t *h;
+    flux_error_t error;
+    double t;
+
+    if (optindex < argc - 1) {
+        optparse_print_usage (p);
+        exit (1);
+    }
+    if (!(h = flux_open (NULL, 0)))
+        log_err_exit ("flux_open");
+
+    if (optindex < argc) {
+        if (setenv ("FLUX_JOB_ID", argv[optindex++], 1) < 0)
+            log_err_exit ("setenv");
+    }
+    if (flux_job_timeleft (h, &error, &t) < 0)
+        log_msg_exit ("%s", error.text);
+    if (optparse_hasopt (p, "human")) {
+        char buf[64];
+        if (fsd_format_duration (buf, sizeof (buf), t) < 0)
+            log_err_exit ("fsd_format_duration");
+        printf ("%s\n", buf);
+    }
+    else {
+        unsigned long int sec;
+        /*  Report whole seconds remaining in job, unless value is
+         *  infinity, in which case we report UINT_MAX, or if value
+         *  is 0 < t < 1, in which case round up to 1 to avoid
+         *  printing "0" which would mean the job has expired.
+         */
+        if (isinf (t))
+            sec = UINT_MAX;
+        else if ((sec = floor (t)) == 0 && t > 0.)
+            sec = 1;
+        printf ("%lu\n", sec);
+    }
+    flux_close (h);
+    return 0;
+}
+
+int cmd_last (optparse_t *p, int argc, char **argv)
+{
+    int optindex = optparse_option_index (p);
+    flux_future_t *f;
+    flux_t *h;
+    char buf[32];
+    json_t *jobs;
+    size_t index;
+    json_t *entry;
+    const char *slice = "[:1]";
+    char sbuf[16];
+
+    if (optindex < argc) {
+        slice = argv[optindex++];
+        // if slice doesn't contain '[', assume 'flux job last N' form
+        if (!strchr (slice, '[')) {
+            errno = 0;
+            char *endptr;
+            int n = strtol (slice, &endptr, 10);
+            if (errno != 0 || *endptr != '\0') {
+                optparse_print_usage (p);
+                exit (1);
+            }
+            snprintf (sbuf, sizeof (sbuf), "[:%d]", n);
+            slice = sbuf;
+        }
+    }
+    if (optindex < argc) {
+        optparse_print_usage (p);
+        exit (1);
+    }
+    if (!(h = flux_open (NULL, 0)))
+        log_err_exit ("flux_open");
+    if (!(f = flux_rpc_pack (h,
+                             "job-manager.history.get",
+                             FLUX_NODEID_ANY,
+                             0,
+                             "{s:s}",
+                             "slice", slice))
+        || flux_rpc_get_unpack (f, "{s:o}", "jobs", &jobs) < 0) {
+        log_msg_exit ("%s", future_strerror (f, errno));
+    }
+    if (json_array_size (jobs) == 0)
+        log_msg_exit ("job history is empty");
+    json_array_foreach (jobs, index, entry) {
+        flux_jobid_t id = json_integer_value (entry);
+        if (flux_job_id_encode (id, "f58", buf, sizeof (buf)) < 0)
+            log_err_exit ("error encoding job ID");
+        printf ("%s\n", buf);
+    }
+    flux_future_destroy (f);
+    flux_close (h);
     return 0;
 }
 

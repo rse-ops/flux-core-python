@@ -13,7 +13,7 @@ inactive_count() {
 	if test $how = "job-manager"; then
 		flux module stats --parse=inactive_jobs job-manager
 	elif test $how = "job-list"; then
-		flux jobs --suppress-header --filter=inactive|wc -l
+		flux jobs --no-header --filter=inactive|wc -l
 	elif test $how = "job-list-stats"; then
 		flux job stats | jq .job_states.inactive
 	else
@@ -45,7 +45,7 @@ test_expect_success 'reload heartbeat module with fast rate' '
         flux module reload heartbeat period=0.1s
 '
 test_expect_success 'create 10 inactive jobs' '
-	flux mini submit --cc=1-10 /bin/true >jobids &&
+	flux submit --cc=1-10 /bin/true >jobids &&
 	flux queue drain
 '
 test_expect_success 'verify job KVS eventlogs exist' '
@@ -111,9 +111,9 @@ test_expect_success 'verify job KVS eventlogs do not exist' '
 	done
 '
 test_expect_success 'create 2 inactive jobs with known completion order' '
-	flux mini submit /bin/true >jobid1 &&
+	flux submit /bin/true >jobid1 &&
 	flux job wait-event $(cat jobid1) clean &&
-	flux mini submit /bin/true >jobid2 &&
+	flux submit /bin/true >jobid2 &&
 	flux job wait-event $(cat jobid2) clean
 '
 test_expect_success 'purge the oldest job - youngest is still there' '
@@ -125,7 +125,7 @@ test_expect_success 'purge the last job' '
 	wait_inactive_count job-manager 0 30
 '
 test_expect_success 'create 10 inactive jobs' '
-	flux mini submit --cc=1-10 /bin/true &&
+	flux submit --cc=1-10 /bin/true &&
 	flux queue drain
 '
 test_expect_success 'reconfigure job manager with inactive-num-limit=5' '

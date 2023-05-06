@@ -14,7 +14,7 @@ flux setattr log-stderr-level 1
 
 # N.B. resources = 1 rank, 2 cores/rank
 test_expect_success 'job-manager: submit 4 jobs' '
-        flux mini submit --log=job{cc}.id --cc="1-4" --flags=debug -n1 \
+        flux submit --log=job{cc}.id --cc="1-4" --flags=debug -n1 \
            hostname
 '
 
@@ -50,7 +50,7 @@ test_expect_success HAVE_JQ 'job-manager: annotations in job id 3-4 updated (RRS
 '
 
 test_expect_success 'job-manager: cancel 2' '
-        flux job cancel $(cat job2.id)
+        flux cancel $(cat job2.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RISR (job 4 runs instead of 3)' '
@@ -69,7 +69,7 @@ test_expect_success HAVE_JQ 'job-manager: annotations in job id 3-4 updated (RIS
 '
 
 test_expect_success 'job-manager: submit high urgency job' '
-        flux mini submit --flags=debug --urgency=20 -n1 hostname >job5.id
+        flux submit --flags=debug --urgency=20 -n1 hostname >job5.id
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RISRS' '
@@ -110,7 +110,7 @@ test_expect_success HAVE_JQ 'job-manager: annotations in job id 3-5 updated (RIS
 '
 
 test_expect_success 'job-manager: cancel 1' '
-        flux job cancel $(cat job1.id)
+        flux cancel $(cat job1.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IISRR (job 5 runs instead of 3)' '
@@ -130,9 +130,9 @@ test_expect_success HAVE_JQ 'job-manager: annotations in job id 3-5 updated (IIS
 '
 
 test_expect_success 'job-manager: cancel all jobs' '
-        flux job cancel $(cat job5.id) &&
-        flux job cancel $(cat job4.id) &&
-        flux job cancel $(cat job3.id)
+        flux cancel $(cat job5.id) &&
+        flux cancel $(cat job4.id) &&
+        flux cancel $(cat job3.id)
 '
 
 test_done

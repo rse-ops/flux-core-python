@@ -218,7 +218,13 @@ class CLIMain(object):
             exit_code = ex
         except Exception as ex:  # pylint: disable=broad-except
             exit_code = 1
-            self.logger.error(str(ex))
+            # Prefer '{strerror}: {filename}' error message over default
+            # OSError string representation which includes useless
+            # `[Error N]` prefix in output.
+            errmsg = getattr(ex, "strerror", None) or str(ex)
+            if getattr(ex, "filename", None):
+                errmsg += f": '{ex.filename}'"
+            self.logger.error(errmsg)
             self.logger.debug(traceback.format_exc())
         finally:
             logging.shutdown()
@@ -226,6 +232,10 @@ class CLIMain(object):
 
 
 def parse_fsd(fsd_string):
+    # Special case for RFC 23 "infinity"
+    if fsd_string in ["inf", "infinity", "INF", "INFINITY"]:
+        return float("inf")
+
     match = re.match(r"(.*?)(s|m|h|d|ms)$", fsd_string)
     try:
         value = float(match.group(1) if match else fsd_string)
@@ -315,6 +325,11 @@ class UtilDatetime(datetime):
 
 
 def fsd(secs):
+    # Special case for RFC 23 "infinity"
+    # N.B. We return lower case "inf" to match Python's "math.inf".
+    if math.isinf(secs):
+        return "inf"
+
     #  Round <1ms down to 0s for now
     if secs < 1.0e-3:
         strtmp = "0s"
@@ -560,7 +575,8 @@ class OutputFormat:
         """
         Check for format fields that are prefixed with `?:` (e.g. "?:{name}")
         and filter them out of the current format string if they result in an
-        empty string for every entry in `items`.
+        empty value (as defined by the `empty` tuple defined below) for every
+        entry in `items`.
         """
         #  Build a list of all format strings that have the collapsible
         #  sentinel '?:' to determine which are subject to the test for
@@ -585,9 +601,10 @@ class OutputFormat:
         formatter = self.formatter()
 
         #  Iterate over all items, rebuilding lst each time to contain
-        #  only those fields that resulted in nonzero strings:
+        #  only those fields that resulted in non-"empty" strings:
+        empty = ("", "0", "0s", "0.0", "0:00:00", "1970-01-01T00:00:00")
         for item in items:
-            lst = [x for x in lst if not formatter.format(x["fmt"], item)]
+            lst = [x for x in lst if formatter.format(x["fmt"], item) in empty]
 
             #  If lst is now empty, that means all fields already returned
             #  nonzero strings, so we can break early

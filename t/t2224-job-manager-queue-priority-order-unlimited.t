@@ -16,7 +16,7 @@ flux setattr log-stderr-level 1
 # flux queue stop/start to ensure no scheduling until after all jobs submitted
 test_expect_success 'job-manager: submit 5 jobs (differing urgencies)' '
         flux queue stop &&
-        flux mini bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
+        flux bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: $(seq 10 2 18) &&
         flux queue start
 '
@@ -64,7 +64,7 @@ test_expect_success HAVE_JQ 'job-manager: queue counts are as expected' '
 '
 
 test_expect_success 'job-manager: cancel a running job' '
-        flux job cancel $(cat job5.id)
+        flux cancel $(cat job5.id)
 '
 
 test_expect_success 'job-manager: start scheduling' '
@@ -96,8 +96,8 @@ test_expect_success HAVE_JQ 'job-manager: queue counts are as expected' '
 # cancel non-running jobs first, to ensure they are not accidentally run when
 # running jobs free resources.
 test_expect_success 'job-manager: cancel all jobs' '
-        flux job cancelall --states=SCHED -f &&
-        flux job cancelall -f &&
+        flux cancel --all --states=pending &&
+        flux cancel --all &&
         flux queue drain
 '
 
@@ -106,17 +106,18 @@ test_expect_success 'job-manager: cancel all jobs' '
 #
 
 test_expect_success 'configure batch,debug queues' '
-	flux config load <<-EOT
+	flux config load <<-EOT &&
 	[queues.batch]
 	[queues.debug]
 	EOT
+	flux queue start --all
 '
 
 test_expect_success 'job-manager: submit 5 jobs to each queue (differing urgencies)' '
         flux queue stop --all &&
-        flux mini bulksubmit -q batch --log=batch{seq1}.id --urgency={} --flags=debug -n1 \
+        flux bulksubmit -q batch --log=batch{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: $(seq 10 2 18) &&
-        flux mini bulksubmit -q debug --log=debug{seq1}.id --urgency={} --flags=debug -n1 \
+        flux bulksubmit -q debug --log=debug{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: $(seq 10 2 18) &&
         flux queue start --all
 '
@@ -154,8 +155,8 @@ test_expect_success 'job-manager: stop scheduling debug queue' '
 '
 
 test_expect_success 'job-manager: cancel the two running jobs' '
-        flux job cancel $(cat batch5.id) &&
-        flux job cancel $(cat debug5.id)
+        flux cancel $(cat batch5.id) &&
+        flux cancel $(cat debug5.id)
 '
 
 # batch queue jobs should run instead of debug queue
@@ -196,8 +197,8 @@ test_expect_success 'job-manager: start scheduling debug queue' '
 '
 
 test_expect_success 'job-manager: cancel the two running jobs' '
-        flux job cancel $(cat batch3.id) &&
-        flux job cancel $(cat batch4.id)
+        flux cancel $(cat batch3.id) &&
+        flux cancel $(cat batch4.id)
 '
 
 # debug job 2 and 4 should have highest priority now and be running
@@ -232,8 +233,8 @@ test_expect_success HAVE_JQ 'job-manager: queue counts are as expected' '
 # cancel non-running jobs first, to ensure they are not accidentally run when
 # running jobs free resources.
 test_expect_success 'job-manager: cancel all jobs' '
-        flux job cancelall --states=SCHED -f &&
-        flux job cancelall -f &&
+        flux cancel --all --states=pending &&
+        flux cancel --all &&
         flux queue drain
 '
 

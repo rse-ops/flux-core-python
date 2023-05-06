@@ -104,15 +104,16 @@ check_PROGRAMS = shmem/backtoback.t$(EXEEXT) loop/logstderr$(EXEEXT) \
 	request/treq$(EXEEXT) request/rpc$(EXEEXT) \
 	request/rpc_stream$(EXEEXT) barrier/tbarrier$(EXEEXT) \
 	reactor/reactorcat$(EXEEXT) rexec/rexec$(EXEEXT) \
-	rexec/rexec_ps$(EXEEXT) rexec/rexec_count_stdout$(EXEEXT) \
-	rexec/rexec_getline$(EXEEXT) job-manager/list-jobs$(EXEEXT) \
+	rexec/rexec_count_stdout$(EXEEXT) rexec/rexec_getline$(EXEEXT) \
+	job-manager/list-jobs$(EXEEXT) \
 	job-manager/print-constants$(EXEEXT) \
 	job-manager/events_journal_stream$(EXEEXT) \
 	ingest/submitbench$(EXEEXT) sched-simple/jj-reader$(EXEEXT) \
 	shell/rcalc$(EXEEXT) shell/lptest$(EXEEXT) shell/mpir$(EXEEXT) \
 	debug/stall$(EXEEXT) hwloc/hwloc-convert$(EXEEXT) \
 	hwloc/hwloc-version$(EXEEXT) util/jobspec1-validate$(EXEEXT) \
-	util/handle$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2)
+	util/handle$(EXEEXT) util/marshall$(EXEEXT) $(am__EXEEXT_1) \
+	$(am__EXEEXT_2)
 @HAVE_MPI_TRUE@am__append_2 = \
 @HAVE_MPI_TRUE@	mpi/hello \
 @HAVE_MPI_TRUE@	mpi/abort \
@@ -154,7 +155,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -822,13 +822,6 @@ rexec_rexec_getline_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(rexec_rexec_getline_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_rexec_rexec_ps_OBJECTS = rexec/rexec_rexec_ps-rexec_ps.$(OBJEXT)
-rexec_rexec_ps_OBJECTS = $(am_rexec_rexec_ps_OBJECTS)
-rexec_rexec_ps_DEPENDENCIES = $(am__DEPENDENCIES_2)
-rexec_rexec_ps_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(rexec_rexec_ps_LDFLAGS) $(LDFLAGS) -o \
-	$@
 am_sched_simple_jj_reader_OBJECTS =  \
 	sched-simple/sched_simple_jj_reader-jj-reader.$(OBJEXT)
 sched_simple_jj_reader_OBJECTS = $(am_sched_simple_jj_reader_OBJECTS)
@@ -892,6 +885,12 @@ util_jobspec1_validate_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(util_jobspec1_validate_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_util_marshall_OBJECTS = util/util_marshall-marshall.$(OBJEXT)
+util_marshall_OBJECTS = $(am_util_marshall_OBJECTS)
+util_marshall_DEPENDENCIES = $(am__DEPENDENCIES_2)
+util_marshall_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(util_marshall_LDFLAGS) $(LDFLAGS) -o $@
 am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t3100-flux-in-flux.t t3200-instance-restart.t \
 	t3202-instance-restart-testexec.t t3203-instance-recovery.t \
@@ -901,23 +900,24 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t0010-generic-utils.t t0011-content-cache.t \
 	t0012-content-sqlite.t t0024-content-s3.t \
 	t0028-content-backing-none.t t0029-filemap-cmd.t \
-	t0025-broker-state-machine.t t0027-broker-groups.t \
-	t0013-config-file.t t0014-runlevel.t t0015-cron.t \
-	t0016-cron-faketime.t t0017-security.t t0018-content-files.t \
-	t0019-jobspec-schema.t t0020-terminus.t t0022-jj-reader.t \
-	t0023-jobspec1-validate.t t0026-flux-R.t t1000-kvs.t \
-	t1001-kvs-internals.t t1003-kvs-stress.t t1004-kvs-namespace.t \
-	t1005-kvs-security.t t1007-kvs-lookup-watch.t \
-	t1008-kvs-eventlog.t t1009-kvs-copy.t t1010-kvs-commit-sync.t \
-	t1011-kvs-checkpoint-period.t t1101-barrier-basic.t \
-	t1102-cmddriver.t t1103-apidisconnect.t t1105-proxy.t \
-	t1106-ssh-connector.t t1107-heartbeat.t t1108-local-opt.t \
-	t1200-stats-basic.t t2004-hydra.t t2007-caliper.t \
-	t2008-althash.t t2009-pmix-bootstrap.t \
-	t2010-kvs-snapshot-restore.t t2100-job-ingest.t \
-	t2110-job-ingest-validator.t t2111-job-ingest-config.t \
-	t2112-job-ingest-frobnicator.t t2113-job-ingest-pipeline.t \
-	t2201-job-cmd.t t2202-job-manager.t t2203-job-manager-single.t \
+	t0030-marshall.t t0031-constraint-parser.t \
+	t0032-directives-parser.t t0025-broker-state-machine.t \
+	t0027-broker-groups.t t0013-config-file.t t0014-runlevel.t \
+	t0015-cron.t t0016-cron-faketime.t t0017-security.t \
+	t0018-content-files.t t0019-jobspec-schema.t t0020-terminus.t \
+	t0022-jj-reader.t t0023-jobspec1-validate.t t0026-flux-R.t \
+	t1000-kvs.t t1001-kvs-internals.t t1003-kvs-stress.t \
+	t1004-kvs-namespace.t t1005-kvs-security.t \
+	t1007-kvs-lookup-watch.t t1008-kvs-eventlog.t t1009-kvs-copy.t \
+	t1010-kvs-commit-sync.t t1011-kvs-checkpoint-period.t \
+	t1101-barrier-basic.t t1102-cmddriver.t t1103-apidisconnect.t \
+	t1105-proxy.t t1106-ssh-connector.t t1107-heartbeat.t \
+	t1108-local-opt.t t1200-stats-basic.t t2004-hydra.t \
+	t2007-caliper.t t2008-althash.t t2010-kvs-snapshot-restore.t \
+	t2100-job-ingest.t t2110-job-ingest-validator.t \
+	t2111-job-ingest-config.t t2112-job-ingest-frobnicator.t \
+	t2113-job-ingest-pipeline.t t2201-job-cmd.t \
+	t2202-job-manager.t t2203-job-manager-single.t \
 	t2204-job-manager-limited.t t2205-job-manager-unlimited.t \
 	t2206-job-manager-annotate.t t2207-job-manager-bulk-state.t \
 	t2208-job-manager-wait.t t2209-job-manager-bugs.t \
@@ -934,24 +934,24 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t2224-job-manager-queue-priority-order-unlimited.t \
 	t2230-job-info-lookup.t t2231-job-info-eventlog-watch.t \
 	t2232-job-info-security.t t2240-queue-cmd.t \
-	t2241-policy-config.t t2250-job-archive.t t2260-job-list.t \
-	t2261-job-list-update.t t2270-job-dependencies.t \
-	t2271-job-dependency-after.t t2272-job-begin-time.t \
-	t2273-job-alloc-bypass.t t2274-manager-perilog.t \
-	t2275-job-duration-validator.t t2276-job-requires.t \
-	t2280-job-memo.t t2300-sched-simple.t \
-	t2302-sched-simple-up-down.t t2310-resource-module.t \
-	t2311-resource-drain.t t2312-resource-exclude.t \
-	t2313-resource-acquire.t t2314-resource-monitor.t \
-	t2315-resource-system.t t2350-resource-list.t \
-	t2351-resource-status-input.t t2352-resource-cmd-config.t \
-	t2400-job-exec-test.t t2401-job-exec-hello.t \
-	t2402-job-exec-dummy.t t2403-job-exec-conf.t \
-	t2404-job-exec-multiuser.t t2405-job-exec-sdexec.t \
-	t2410-exec-systemd.t t2500-job-attach.t t2501-job-status.t \
-	t2600-job-shell-rcalc.t t2601-job-shell-standalone.t \
-	t2602-job-shell.t t2603-job-shell-initrc.t \
-	t2604-job-shell-affinity.t \
+	t2241-queue-cmd-list.t t2245-policy-config.t \
+	t2250-job-archive.t t2260-job-list.t t2261-job-list-update.t \
+	t2270-job-dependencies.t t2271-job-dependency-after.t \
+	t2272-job-begin-time.t t2273-job-alloc-bypass.t \
+	t2274-manager-perilog.t t2275-job-duration-validator.t \
+	t2276-job-requires.t t2280-job-memo.t t2300-sched-simple.t \
+	t2302-sched-simple-up-down.t t2303-sched-hello.t \
+	t2310-resource-module.t t2311-resource-drain.t \
+	t2312-resource-exclude.t t2313-resource-acquire.t \
+	t2314-resource-monitor.t t2315-resource-system.t \
+	t2350-resource-list.t t2351-resource-status-input.t \
+	t2352-resource-cmd-config.t t2400-job-exec-test.t \
+	t2401-job-exec-hello.t t2402-job-exec-dummy.t \
+	t2403-job-exec-conf.t t2404-job-exec-multiuser.t \
+	t2405-job-exec-sdexec.t t2410-exec-systemd.t \
+	t2500-job-attach.t t2501-job-status.t t2600-job-shell-rcalc.t \
+	t2601-job-shell-standalone.t t2602-job-shell.t \
+	t2603-job-shell-initrc.t t2604-job-shell-affinity.t \
 	t2605-job-shell-output-redirection-standalone.t \
 	t2606-job-shell-output-redirection.t t2607-job-shell-input.t \
 	t2608-job-shell-log.t t2609-job-shell-events.t \
@@ -960,12 +960,16 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
 	t2616-job-shell-taskmap.t t2617-job-shell-stage-in.t \
 	t2700-mini-cmd.t t2701-mini-batch.t t2702-mini-alloc.t \
-	t2703-mini-bulksubmit.t t2800-jobs-cmd.t \
+	t2703-mini-bulksubmit.t t2710-python-cli-submit.t \
+	t2711-python-cli-run.t t2712-python-cli-alloc.t \
+	t2713-python-cli-bulksubmit.t t2714-python-cli-batch.t \
+	t2715-python-cli-cancel.t t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t t2800-jobs-instance-info.t \
 	t2800-jobs-config.t t2801-top-cmd.t t2802-uri-cmd.t \
 	t2803-flux-pstree.t t2804-uptime-cmd.t t2805-startlog-cmd.t \
 	t2806-config-cmd.t t2807-dump-cmd.t t2808-shutdown-cmd.t \
 	t2809-job-purge.t t2810-kvs-garbage-collect.t \
+	t2811-flux-pgrep.t t2812-flux-job-last.t \
 	t2900-job-timelimits.t t3000-mpi-basic.t \
 	t3001-mpi-personalities.t t3002-pmi.t t3003-mpi-abort.t \
 	t3201-crontabs.t t3300-system-basic.t t3301-system-latestart.t \
@@ -984,6 +988,7 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	python/t0020-hostlist.py python/t0021-idset.py \
 	python/t0022-resource-set.py python/t0023-executor.py \
 	python/t0024-util.py python/t0025-uri.py python/t0026-tree.py \
+	python/t0027-constraint-parser.py \
 	python/t1000-service-add-remove.py python/t0009-security.py \
 	system/0001-basic.t system/0002-job-exec-sdexec-basic.t \
 	system/0003-instance-restart.t system/0004-recovery.t \
@@ -1016,17 +1021,19 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	issues/t4583-free-range-test.sh \
 	issues/t4612-eventlog-overwrite-crash.sh \
 	issues/t4711-job-list-purge-inactive.sh \
-	issues/t4771-flux-start-bash.sh python/__init__.py \
+	issues/t4771-flux-start-bash.sh \
+	issues/t4852-t_submit-legacy.sh python/__init__.py \
 	python/subflux.py python/tap scripts/event-trace.lua \
 	scripts/event-trace-bypass.lua scripts/waitfile.lua \
 	scripts/t0004-event-helper.sh scripts/tssh scripts/sign-as.py \
 	scripts/runpty.py scripts/dmesg-grep.py \
 	scripts/stats-listen.py scripts/sqlite-query.py \
-	valgrind/valgrind-workload.sh valgrind/workload.d/job \
-	content/content-helper.sh kvs/kvs-helper.sh \
-	kvs/change-checkpoint.py job-manager/exec-service.lua \
-	job-manager/drain-cancel.py job-manager/bulk-state.py \
-	job-manager/submit-wait.py job-manager/submit-waitany.py \
+	scripts/pipe.py valgrind/valgrind-workload.sh \
+	valgrind/workload.d/job content/content-helper.sh \
+	kvs/kvs-helper.sh kvs/change-checkpoint.py \
+	job-manager/exec-service.lua job-manager/drain-cancel.py \
+	job-manager/bulk-state.py job-manager/submit-wait.py \
+	job-manager/submit-waitany.py \
 	job-manager/submit-sliding-window.py \
 	job-manager/wait-interrupted.py job-manager/sched-helper.sh \
 	job-manager/job-conv.py job-attach/outputsleep.sh \
@@ -1154,13 +1161,13 @@ SOURCES = $(disconnect_watcher_la_SOURCES) \
 	$(reactor_reactorcat_SOURCES) $(request_rpc_SOURCES) \
 	$(request_rpc_stream_SOURCES) $(request_treq_SOURCES) \
 	$(rexec_rexec_SOURCES) $(rexec_rexec_count_stdout_SOURCES) \
-	$(rexec_rexec_getline_SOURCES) $(rexec_rexec_ps_SOURCES) \
+	$(rexec_rexec_getline_SOURCES) \
 	$(sched_simple_jj_reader_SOURCES) \
 	$(sdprocess_job_signal_exit_SOURCES) \
 	$(sdprocess_sim_broker_SOURCES) $(shell_lptest_SOURCES) \
 	$(shell_mpir_SOURCES) $(shell_rcalc_SOURCES) \
 	$(shmem_backtoback_t_SOURCES) $(util_handle_SOURCES) \
-	$(util_jobspec1_validate_SOURCES)
+	$(util_jobspec1_validate_SOURCES) $(util_marshall_SOURCES)
 DIST_SOURCES = $(disconnect_watcher_la_SOURCES) \
 	$(ingest_job_manager_dummy_la_SOURCES) \
 	$(job_manager_plugins_args_la_SOURCES) \
@@ -1218,13 +1225,13 @@ DIST_SOURCES = $(disconnect_watcher_la_SOURCES) \
 	$(reactor_reactorcat_SOURCES) $(request_rpc_SOURCES) \
 	$(request_rpc_stream_SOURCES) $(request_treq_SOURCES) \
 	$(rexec_rexec_SOURCES) $(rexec_rexec_count_stdout_SOURCES) \
-	$(rexec_rexec_getline_SOURCES) $(rexec_rexec_ps_SOURCES) \
+	$(rexec_rexec_getline_SOURCES) \
 	$(sched_simple_jj_reader_SOURCES) \
 	$(sdprocess_job_signal_exit_SOURCES) \
 	$(sdprocess_sim_broker_SOURCES) $(shell_lptest_SOURCES) \
 	$(shell_mpir_SOURCES) $(shell_rcalc_SOURCES) \
 	$(shmem_backtoback_t_SOURCES) $(util_handle_SOURCES) \
-	$(util_jobspec1_validate_SOURCES)
+	$(util_jobspec1_validate_SOURCES) $(util_marshall_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -1538,8 +1545,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -1730,23 +1735,24 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	t0010-generic-utils.t t0011-content-cache.t \
 	t0012-content-sqlite.t t0024-content-s3.t \
 	t0028-content-backing-none.t t0029-filemap-cmd.t \
-	t0025-broker-state-machine.t t0027-broker-groups.t \
-	t0013-config-file.t t0014-runlevel.t t0015-cron.t \
-	t0016-cron-faketime.t t0017-security.t t0018-content-files.t \
-	t0019-jobspec-schema.t t0020-terminus.t t0022-jj-reader.t \
-	t0023-jobspec1-validate.t t0026-flux-R.t t1000-kvs.t \
-	t1001-kvs-internals.t t1003-kvs-stress.t t1004-kvs-namespace.t \
-	t1005-kvs-security.t t1007-kvs-lookup-watch.t \
-	t1008-kvs-eventlog.t t1009-kvs-copy.t t1010-kvs-commit-sync.t \
-	t1011-kvs-checkpoint-period.t t1101-barrier-basic.t \
-	t1102-cmddriver.t t1103-apidisconnect.t t1105-proxy.t \
-	t1106-ssh-connector.t t1107-heartbeat.t t1108-local-opt.t \
-	t1200-stats-basic.t t2004-hydra.t t2007-caliper.t \
-	t2008-althash.t t2009-pmix-bootstrap.t \
-	t2010-kvs-snapshot-restore.t t2100-job-ingest.t \
-	t2110-job-ingest-validator.t t2111-job-ingest-config.t \
-	t2112-job-ingest-frobnicator.t t2113-job-ingest-pipeline.t \
-	t2201-job-cmd.t t2202-job-manager.t t2203-job-manager-single.t \
+	t0030-marshall.t t0031-constraint-parser.t \
+	t0032-directives-parser.t t0025-broker-state-machine.t \
+	t0027-broker-groups.t t0013-config-file.t t0014-runlevel.t \
+	t0015-cron.t t0016-cron-faketime.t t0017-security.t \
+	t0018-content-files.t t0019-jobspec-schema.t t0020-terminus.t \
+	t0022-jj-reader.t t0023-jobspec1-validate.t t0026-flux-R.t \
+	t1000-kvs.t t1001-kvs-internals.t t1003-kvs-stress.t \
+	t1004-kvs-namespace.t t1005-kvs-security.t \
+	t1007-kvs-lookup-watch.t t1008-kvs-eventlog.t t1009-kvs-copy.t \
+	t1010-kvs-commit-sync.t t1011-kvs-checkpoint-period.t \
+	t1101-barrier-basic.t t1102-cmddriver.t t1103-apidisconnect.t \
+	t1105-proxy.t t1106-ssh-connector.t t1107-heartbeat.t \
+	t1108-local-opt.t t1200-stats-basic.t t2004-hydra.t \
+	t2007-caliper.t t2008-althash.t t2010-kvs-snapshot-restore.t \
+	t2100-job-ingest.t t2110-job-ingest-validator.t \
+	t2111-job-ingest-config.t t2112-job-ingest-frobnicator.t \
+	t2113-job-ingest-pipeline.t t2201-job-cmd.t \
+	t2202-job-manager.t t2203-job-manager-single.t \
 	t2204-job-manager-limited.t t2205-job-manager-unlimited.t \
 	t2206-job-manager-annotate.t t2207-job-manager-bulk-state.t \
 	t2208-job-manager-wait.t t2209-job-manager-bugs.t \
@@ -1763,24 +1769,24 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	t2224-job-manager-queue-priority-order-unlimited.t \
 	t2230-job-info-lookup.t t2231-job-info-eventlog-watch.t \
 	t2232-job-info-security.t t2240-queue-cmd.t \
-	t2241-policy-config.t t2250-job-archive.t t2260-job-list.t \
-	t2261-job-list-update.t t2270-job-dependencies.t \
-	t2271-job-dependency-after.t t2272-job-begin-time.t \
-	t2273-job-alloc-bypass.t t2274-manager-perilog.t \
-	t2275-job-duration-validator.t t2276-job-requires.t \
-	t2280-job-memo.t t2300-sched-simple.t \
-	t2302-sched-simple-up-down.t t2310-resource-module.t \
-	t2311-resource-drain.t t2312-resource-exclude.t \
-	t2313-resource-acquire.t t2314-resource-monitor.t \
-	t2315-resource-system.t t2350-resource-list.t \
-	t2351-resource-status-input.t t2352-resource-cmd-config.t \
-	t2400-job-exec-test.t t2401-job-exec-hello.t \
-	t2402-job-exec-dummy.t t2403-job-exec-conf.t \
-	t2404-job-exec-multiuser.t t2405-job-exec-sdexec.t \
-	t2410-exec-systemd.t t2500-job-attach.t t2501-job-status.t \
-	t2600-job-shell-rcalc.t t2601-job-shell-standalone.t \
-	t2602-job-shell.t t2603-job-shell-initrc.t \
-	t2604-job-shell-affinity.t \
+	t2241-queue-cmd-list.t t2245-policy-config.t \
+	t2250-job-archive.t t2260-job-list.t t2261-job-list-update.t \
+	t2270-job-dependencies.t t2271-job-dependency-after.t \
+	t2272-job-begin-time.t t2273-job-alloc-bypass.t \
+	t2274-manager-perilog.t t2275-job-duration-validator.t \
+	t2276-job-requires.t t2280-job-memo.t t2300-sched-simple.t \
+	t2302-sched-simple-up-down.t t2303-sched-hello.t \
+	t2310-resource-module.t t2311-resource-drain.t \
+	t2312-resource-exclude.t t2313-resource-acquire.t \
+	t2314-resource-monitor.t t2315-resource-system.t \
+	t2350-resource-list.t t2351-resource-status-input.t \
+	t2352-resource-cmd-config.t t2400-job-exec-test.t \
+	t2401-job-exec-hello.t t2402-job-exec-dummy.t \
+	t2403-job-exec-conf.t t2404-job-exec-multiuser.t \
+	t2405-job-exec-sdexec.t t2410-exec-systemd.t \
+	t2500-job-attach.t t2501-job-status.t t2600-job-shell-rcalc.t \
+	t2601-job-shell-standalone.t t2602-job-shell.t \
+	t2603-job-shell-initrc.t t2604-job-shell-affinity.t \
 	t2605-job-shell-output-redirection-standalone.t \
 	t2606-job-shell-output-redirection.t t2607-job-shell-input.t \
 	t2608-job-shell-log.t t2609-job-shell-events.t \
@@ -1789,12 +1795,16 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
 	t2616-job-shell-taskmap.t t2617-job-shell-stage-in.t \
 	t2700-mini-cmd.t t2701-mini-batch.t t2702-mini-alloc.t \
-	t2703-mini-bulksubmit.t t2800-jobs-cmd.t \
+	t2703-mini-bulksubmit.t t2710-python-cli-submit.t \
+	t2711-python-cli-run.t t2712-python-cli-alloc.t \
+	t2713-python-cli-bulksubmit.t t2714-python-cli-batch.t \
+	t2715-python-cli-cancel.t t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t t2800-jobs-instance-info.t \
 	t2800-jobs-config.t t2801-top-cmd.t t2802-uri-cmd.t \
 	t2803-flux-pstree.t t2804-uptime-cmd.t t2805-startlog-cmd.t \
 	t2806-config-cmd.t t2807-dump-cmd.t t2808-shutdown-cmd.t \
 	t2809-job-purge.t t2810-kvs-garbage-collect.t \
+	t2811-flux-pgrep.t t2812-flux-job-last.t \
 	t2900-job-timelimits.t t3000-mpi-basic.t \
 	t3001-mpi-personalities.t t3002-pmi.t t3003-mpi-abort.t \
 	t3201-crontabs.t t3300-system-basic.t t3301-system-latestart.t \
@@ -1813,6 +1823,7 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	python/t0020-hostlist.py python/t0021-idset.py \
 	python/t0022-resource-set.py python/t0023-executor.py \
 	python/t0024-util.py python/t0025-uri.py python/t0026-tree.py \
+	python/t0027-constraint-parser.py \
 	python/t1000-service-add-remove.py $(am__append_1)
 EXTRA_DIST = \
 	aggregate-results.sh \
@@ -1833,7 +1844,10 @@ EXTRA_DIST = \
 	scripts/run_timeout.py \
 	scripts/startctl.py \
 	scripts/groups.py \
+	scripts/rexec.py \
 	jobspec \
+	marshall \
+	batch \
 	job-manager/dumps \
 	flux-resource \
 	resource/get-xml-test.py
@@ -1876,6 +1890,7 @@ dist_check_SCRIPTS = \
 	issues/t4612-eventlog-overwrite-crash.sh \
 	issues/t4711-job-list-purge-inactive.sh \
 	issues/t4771-flux-start-bash.sh \
+	issues/t4852-t_submit-legacy.sh \
 	python/__init__.py \
 	python/subflux.py \
 	python/tap \
@@ -1889,6 +1904,7 @@ dist_check_SCRIPTS = \
 	scripts/dmesg-grep.py \
 	scripts/stats-listen.py \
 	scripts/sqlite-query.py \
+	scripts/pipe.py \
 	valgrind/valgrind-workload.sh \
 	valgrind/workload.d/job \
 	content/content-helper.sh \
@@ -2153,10 +2169,6 @@ rexec_rexec_SOURCES = rexec/rexec.c
 rexec_rexec_CPPFLAGS = $(test_cppflags)
 rexec_rexec_LDADD = $(test_ldadd)
 rexec_rexec_LDFLAGS = $(test_ldflags)
-rexec_rexec_ps_SOURCES = rexec/rexec_ps.c
-rexec_rexec_ps_CPPFLAGS = $(test_cppflags)
-rexec_rexec_ps_LDADD = $(test_ldadd)
-rexec_rexec_ps_LDFLAGS = $(test_ldflags)
 rexec_rexec_count_stdout_SOURCES = rexec/rexec_count_stdout.c
 rexec_rexec_count_stdout_CPPFLAGS = $(test_cppflags)
 rexec_rexec_count_stdout_LDADD = $(test_ldadd)
@@ -2467,6 +2479,10 @@ util_handle_SOURCES = util/handle.c
 util_handle_CPPFLAGS = $(test_cppflags)
 util_handle_LDADD = $(test_ldadd)
 util_handle_LDFLAGS = $(test_ldflags)
+util_marshall_SOURCES = util/marshall.c
+util_marshall_CPPFLAGS = $(test_cppflags)
+util_marshall_LDADD = $(test_ldadd)
+util_marshall_LDFLAGS = $(test_ldflags)
 stats_stats_basic_la_SOURCES = stats/stats-basic.c
 stats_stats_basic_la_CPPFLAGS = $(test_cppflags)
 stats_stats_basic_la_LDFLAGS = \
@@ -3114,12 +3130,6 @@ rexec/rexec_rexec_getline-rexec_getline.$(OBJEXT):  \
 rexec/rexec_getline$(EXEEXT): $(rexec_rexec_getline_OBJECTS) $(rexec_rexec_getline_DEPENDENCIES) $(EXTRA_rexec_rexec_getline_DEPENDENCIES) rexec/$(am__dirstamp)
 	@rm -f rexec/rexec_getline$(EXEEXT)
 	$(AM_V_CCLD)$(rexec_rexec_getline_LINK) $(rexec_rexec_getline_OBJECTS) $(rexec_rexec_getline_LDADD) $(LIBS)
-rexec/rexec_rexec_ps-rexec_ps.$(OBJEXT): rexec/$(am__dirstamp) \
-	rexec/$(DEPDIR)/$(am__dirstamp)
-
-rexec/rexec_ps$(EXEEXT): $(rexec_rexec_ps_OBJECTS) $(rexec_rexec_ps_DEPENDENCIES) $(EXTRA_rexec_rexec_ps_DEPENDENCIES) rexec/$(am__dirstamp)
-	@rm -f rexec/rexec_ps$(EXEEXT)
-	$(AM_V_CCLD)$(rexec_rexec_ps_LINK) $(rexec_rexec_ps_OBJECTS) $(rexec_rexec_ps_LDADD) $(LIBS)
 sched-simple/$(am__dirstamp):
 	@$(MKDIR_P) sched-simple
 	@: > sched-simple/$(am__dirstamp)
@@ -3205,6 +3215,12 @@ util/util_jobspec1_validate-jobspec1-validate.$(OBJEXT):  \
 util/jobspec1-validate$(EXEEXT): $(util_jobspec1_validate_OBJECTS) $(util_jobspec1_validate_DEPENDENCIES) $(EXTRA_util_jobspec1_validate_DEPENDENCIES) util/$(am__dirstamp)
 	@rm -f util/jobspec1-validate$(EXEEXT)
 	$(AM_V_CCLD)$(util_jobspec1_validate_LINK) $(util_jobspec1_validate_OBJECTS) $(util_jobspec1_validate_LDADD) $(LIBS)
+util/util_marshall-marshall.$(OBJEXT): util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
+
+util/marshall$(EXEEXT): $(util_marshall_OBJECTS) $(util_marshall_DEPENDENCIES) $(EXTRA_util_marshall_DEPENDENCIES) util/$(am__dirstamp)
+	@rm -f util/marshall$(EXEEXT)
+	$(AM_V_CCLD)$(util_marshall_LINK) $(util_marshall_OBJECTS) $(util_marshall_LDADD) $(LIBS)
 install-luaSCRIPTS: $(lua_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(lua_SCRIPTS)'; test -n "$(luadir)" || list=; \
@@ -3343,7 +3359,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec-rexec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_count_stdout-rexec_count_stdout.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_getline-rexec_getline.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sdprocess/$(DEPDIR)/sdprocess_job_signal_exit-job-signal-exit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sdprocess/$(DEPDIR)/sdprocess_sim_broker-sim-broker.Po@am__quote@
@@ -3364,6 +3379,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@stats/$(DEPDIR)/stats_stats_immediate_la-stats-immediate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/util_handle-handle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/util_jobspec1_validate-jobspec1-validate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/util_marshall-marshall.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -4257,20 +4273,6 @@ rexec/rexec_rexec_getline-rexec_getline.obj: rexec/rexec_getline.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_getline_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_getline-rexec_getline.obj `if test -f 'rexec/rexec_getline.c'; then $(CYGPATH_W) 'rexec/rexec_getline.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_getline.c'; fi`
 
-rexec/rexec_rexec_ps-rexec_ps.o: rexec/rexec_ps.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rexec/rexec_rexec_ps-rexec_ps.o -MD -MP -MF rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo -c -o rexec/rexec_rexec_ps-rexec_ps.o `test -f 'rexec/rexec_ps.c' || echo '$(srcdir)/'`rexec/rexec_ps.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rexec/rexec_ps.c' object='rexec/rexec_rexec_ps-rexec_ps.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_ps-rexec_ps.o `test -f 'rexec/rexec_ps.c' || echo '$(srcdir)/'`rexec/rexec_ps.c
-
-rexec/rexec_rexec_ps-rexec_ps.obj: rexec/rexec_ps.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rexec/rexec_rexec_ps-rexec_ps.obj -MD -MP -MF rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo -c -o rexec/rexec_rexec_ps-rexec_ps.obj `if test -f 'rexec/rexec_ps.c'; then $(CYGPATH_W) 'rexec/rexec_ps.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_ps.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rexec/rexec_ps.c' object='rexec/rexec_rexec_ps-rexec_ps.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_ps-rexec_ps.obj `if test -f 'rexec/rexec_ps.c'; then $(CYGPATH_W) 'rexec/rexec_ps.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_ps.c'; fi`
-
 sched-simple/sched_simple_jj_reader-jj-reader.o: sched-simple/jj-reader.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(sched_simple_jj_reader_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sched-simple/sched_simple_jj_reader-jj-reader.o -MD -MP -MF sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Tpo -c -o sched-simple/sched_simple_jj_reader-jj-reader.o `test -f 'sched-simple/jj-reader.c' || echo '$(srcdir)/'`sched-simple/jj-reader.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Tpo sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Po
@@ -4396,6 +4398,20 @@ util/util_jobspec1_validate-jobspec1-validate.obj: util/jobspec1-validate.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/jobspec1-validate.c' object='util/util_jobspec1_validate-jobspec1-validate.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(util_jobspec1_validate_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o util/util_jobspec1_validate-jobspec1-validate.obj `if test -f 'util/jobspec1-validate.c'; then $(CYGPATH_W) 'util/jobspec1-validate.c'; else $(CYGPATH_W) '$(srcdir)/util/jobspec1-validate.c'; fi`
+
+util/util_marshall-marshall.o: util/marshall.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(util_marshall_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT util/util_marshall-marshall.o -MD -MP -MF util/$(DEPDIR)/util_marshall-marshall.Tpo -c -o util/util_marshall-marshall.o `test -f 'util/marshall.c' || echo '$(srcdir)/'`util/marshall.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/util_marshall-marshall.Tpo util/$(DEPDIR)/util_marshall-marshall.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/marshall.c' object='util/util_marshall-marshall.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(util_marshall_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o util/util_marshall-marshall.o `test -f 'util/marshall.c' || echo '$(srcdir)/'`util/marshall.c
+
+util/util_marshall-marshall.obj: util/marshall.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(util_marshall_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT util/util_marshall-marshall.obj -MD -MP -MF util/$(DEPDIR)/util_marshall-marshall.Tpo -c -o util/util_marshall-marshall.obj `if test -f 'util/marshall.c'; then $(CYGPATH_W) 'util/marshall.c'; else $(CYGPATH_W) '$(srcdir)/util/marshall.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/util_marshall-marshall.Tpo util/$(DEPDIR)/util_marshall-marshall.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/marshall.c' object='util/util_marshall-marshall.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(util_marshall_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o util/util_marshall-marshall.obj `if test -f 'util/marshall.c'; then $(CYGPATH_W) 'util/marshall.c'; else $(CYGPATH_W) '$(srcdir)/util/marshall.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

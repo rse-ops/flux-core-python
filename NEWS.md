@@ -1,3 +1,138 @@
+flux-core version 0.48.0 - 2023-03-07
+-------------------------------------
+
+This release adds submission directives ("see flux help batch") and
+shortens the the job submission commands to "flux batch", "flux run",
+etc.  The flux-mini(1) command is deprecated.
+
+## New Features
+
+ * support RFC 36 submission directives in `flux mini batch` (#4942)
+ * make all flux-mini subcommands available as top level flux commands (#4961)
+ * add flux-cancel(1) (#4983)
+ * add flux-fortune (#4966)
+ * flux-run: allow stdin to be directed to a subset of tasks (#4977)
+ * cmd: add -u, --unbuffered option to submission commands (#4973)
+ * allow flux-core to be configured in ascii-only mode (#4968)
+ * Support {{tmpdir}} in shell mustache templates and simplify batch jobspec
+   construction (#4951)
+ * broker: allow a file argument to `-c, --config-path` in TOML or JSON
+   (#4949)
+
+## Fixes
+
+ * completions: remove flux-mini and other updates (#4984)
+ * flux-top: initialize f character before drawing panes (#4982)
+ * libsubprocess:  don't abort remote processes that receive SIGSTOP (#4981)
+ * shell: fix memory leak in doom plugin (#4979)
+ * flux-resource: suppress NGPUS on systems without GPUs (#4959)
+ * job-ingest: handle worker channel overflow (#4948)
+ * improve error message in Python frontend utilities when broker is not
+   running (#4950)
+ * job-manager: fix for job priority not reset after a duplicate urgency
+   update (#4941)
+ * job-manager/history: track inactive jobs over purge/restart (#4932)
+
+## Cleanup
+
+ * flux-filemap: update to RFC 37 internally (#4974)
+ * libsubprocess: rework internal logging (#4960)
+ * libsubprocess: drop `FLUX_SUBPROCESS_EXEC_FAILED` state (#4955)
+ * libsubprocess: fix bugs and clean up subprocess server (#4944)
+
+## Documentation
+
+ * Fix minor documentation errors and typos (#4934)
+ * flux-batch(1) and flux-alloc(1): improve DESCRIPTION section (#4963)
+ * README: fix a couple typos (#4970)
+ * README: trim it down now that we have readthedocs (#4969)
+ * divide flux(1) help output into sections (#4967)
+ * doc: add shell help on flux-jobs(1) formatting (#4939)
+ * doc: document attach in flux-job(1) (#4936)
+
+## Testsuite/CI/Development
+
+ * testsuite: unset `FLUX_F58_FORCE_ASCII` in some tests (#4976)
+ * .devcontainer permissions fix (#4964)
+ * Add/developer doc on commands (#4965)
+
+flux-core version 0.47.0 - 2023-02-07
+-------------------------------------
+
+## New Features
+
+ * add `flux job last` (#4908)
+ * add `flux-pgrep` and `flux-pkill` (#4867, #4903)
+ * add `flux-keygen --meta KEY=VAL` option (#4882)
+ * add tools for querying job remaining time: `flux_job_timeleft(3)`, python
+   `flux.job.timeleft()` and `flux-job timeleft` (#4845)
+ * flux-shell: add `-opmi=off` option (#4841)
+ * suggest use of `--force` in `flux resource drain` when target is already
+   drained (#4924)
+ * automatically provide job status for pending interactive jobs (#4916)
+ * flux-resource: mark drained+offline nodes with asterisk (#4913)
+ * support flux mini batch,alloc `--dump[=FILE]` (#4881)
+ * flux-queue: support flux queue list (#4896, #4929)
+ * support RFC 31 `hostlist` and `rank` job constraints (#4895, #4919)
+ * python: add flux.constraint.parser for RFC 35 Constraint Query Syntax
+   (#4871, #4925)
+ * Support RFC 35 constraint syntax in `flux mini --requires` (#4897, #4923)
+ * flux-top: limit jobs and summary to specific queue (#4847)
+ * enable broker bootstrap methods to be provided by dso plugins, and drop
+   compiled-in pmix support (#4865)
+ * flux-resource: support QUEUE output in resource list (#4859)
+ * flux-top: Support --color option (#4840)
+ * libutil: support "infinity" in FSD (#4846)
+ * add internal universal PMI client library (#4829)
+ * job-manager: default queues to enabled and stopped (#4857)
+ * libtaskmap: add `TASKMAP_ENCODE_RAW_DERANGED` (#4838)
+
+## Fixes
+
+ * job-list: do not assume alloc event context always contains annotations
+   (#4907)
+ * job-manager: fix alloc-bypass plugin (#4901)
+ * flux-resource: increase width of queue field (#4905)
+ * eliminate "safe mode" after improper shutdown (#4898)
+ * flux-resource: handle queues with no configured constraints (#4893)
+ * fix message encoding problem introduced in v0.46.1 (#4890)
+ * flux-shell: truncate long log messages (#4878)
+ * job-manager: switch to timer watcher in perilog plugin (#4864)
+ * job-manager: do not checkpoint on every queue state change (#4856)
+ * job-list: separate `t_submit`/`t_depend` calculation (#4853)
+ * flux-top: honor `FLUX_F58_FORCE_ASCII` (#4842)
+ * flux-job: fix potential segfault (#4827)
+ * work around fluxion inbability to recover running jobs (#4894)
+ * etc: update bash completions (#4928)
+
+## Documentation
+
+ * doc: document `--job-name` in flux-mini(1) (#4879)
+ * doc: document format fields in flux-resource(1)  (#4850)
+ * doc: document subcommand `wait` in flux-job(1) (#4851)
+
+## Testsuite/CI/Development
+
+ * clean up little used broker attribute functionality (#4870)
+ * flux-queue: rewrite in python (#4889)
+ * job-list: add jobspec and R parsing unit tests (#4883)
+ * flux-top: add extra test coverage (#4833)
+ * testsuite: increase `flux job wait-event` timeout (#4888)
+ * testsuite: drop fragile broker.boot-method test (#4876)
+ * docker: add site-packages to default python3 path (#4880)
+ * ci: speed up coverage builds (#4828)
+
+
+flux-core version 0.46.1 - 2022-12-11
+-------------------------------------
+
+## Fixes
+ * build: fix installation of libpmi.so (#4824)
+ * testsuite: fix failure on a system with fully-qualified hostname (#4825)
+
+## Cleanup
+ * libflux/message: cleanup with macros and CCAN pushpull class (#4823)
+
 flux-core version 0.46.0 - 2022-12-10
 -------------------------------------
 

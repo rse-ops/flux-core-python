@@ -11,37 +11,37 @@ LIST_JOBS=${FLUX_BUILD_DIR}/t/job-manager/list-jobs
 
 test_expect_success 'flux-queue: unknown sub-command fails with usage message' '
 	test_must_fail flux queue wrongsubcmd 2>usage.out &&
-	grep Usage: usage.out
+	grep -i usage: usage.out
 '
 
 test_expect_success 'flux-queue: missing sub-command fails with usage message' '
 	test_must_fail flux queue 2>usage2.out &&
-	grep Usage: usage2.out
+	grep -i usage: usage2.out
 '
 
 test_expect_success 'flux-queue: disable with no reason fails' '
 	test_must_fail flux queue submit disable 2>usage3.out &&
-	grep Usage: usage3.out
+	grep -i usage: usage3.out
 '
 
 test_expect_success 'flux-queue: enable with extra free args fails' '
 	test_must_fail flux queue enable xyz 2>usage4.out &&
-	grep Usage: usage4.out
+	grep -i usage: usage4.out
 '
 
 test_expect_success 'flux-queue: status with extra free args fails' '
 	test_must_fail flux queue status xyz 2>usage5.out &&
-	grep Usage: usage5.out
+	grep -i usage: usage5.out
 '
 
 test_expect_success 'flux-queue: drain with extra free args fails' '
 	test_must_fail flux queue drain xyz 2>usage6.out &&
-	grep Usage: usage6.out
+	grep -i usage: usage6.out
 '
 
 test_expect_success 'flux-queue: idle with extra free args fails' '
 	test_must_fail flux queue idle xyz 2>usage7.out &&
-	grep Usage: usage7.out
+	grep -i usage: usage7.out
 '
 
 test_expect_success 'flux-queue: status with bad broker connection fails' '
@@ -71,7 +71,7 @@ test_expect_success 'flux-queue: disable works' '
 '
 
 test_expect_success 'flux-queue: job submit fails with queue disabled' '
-	test_must_fail flux mini run /bin/true
+	test_must_fail flux run /bin/true
 '
 
 test_expect_success 'flux-queue: enable works' '
@@ -79,8 +79,8 @@ test_expect_success 'flux-queue: enable works' '
 	grep "^Job submission is enabled" enable.out
 '
 
-test_expect_success 'flux-queue: flux mini run works after enable' '
-	run_timeout 60 flux mini run /bin/true
+test_expect_success 'flux-queue: flux run works after enable' '
+	run_timeout 60 flux run /bin/true
 '
 
 test_expect_success 'flux-queue: stop with bad broker connection fails' '
@@ -93,7 +93,7 @@ test_expect_success 'flux-queue: start with bad broker connection fails' '
 
 test_expect_success 'flux-queue: start with extra free args fails' '
 	test_must_fail flux queue start xyz 2>start_xargs.err &&
-	grep Usage: start_xargs.err
+	grep -i usage: start_xargs.err
 '
 
 test_expect_success 'flux-queue: stop works' '
@@ -126,20 +126,20 @@ test_expect_success 'flux-queue: status reports no reason for stop' '
 '
 
 test_expect_success HAVE_JQ 'flux-queue: stop with --nocheckpoint works' '
-	flux queue start &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[0].start == true" &&
-	flux queue stop --nocheckpoint &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[0].start == true" &&
-	flux queue status >status3.out &&
-	cat <<-EOT >status3.exp &&
-	Job submission is enabled
-	Scheduling is stopped
-	EOT
-	test_cmp status3.exp status3.out
+	flux start \
+	    -o,-Scontent.dump=dump_queue_nocheckpoint1.tar \
+	    flux queue stop &&
+	tar -xvf dump_queue_nocheckpoint1.tar &&
+	cat checkpoint/job-manager | jq -e ".queue[0].start == false" &&
+	flux start \
+	    -o,-Scontent.dump=dump_queue_nocheckpoint2.tar \
+	    flux queue stop --nocheckpoint &&
+	tar -xvf dump_queue_nocheckpoint2.tar &&
+	cat checkpoint/job-manager | jq -e ".queue[0].start == true"
 '
 
 test_expect_success 'flux-queue: submit some jobs' '
-	flux mini submit --cc 1-3 --wait-event=priority /bin/true
+	flux submit --cc 1-3 --wait-event=priority /bin/true
 '
 
 test_expect_success 'flux-queue: start scheduling' '
@@ -153,13 +153,13 @@ test_expect_success 'flux-queue: queue empties out' '
 
 test_expect_success 'flux-queue: start long job that uses all cores' '
 	ncores=$(flux resource list -s up -no {ncores}) &&
-	id=$(flux mini submit -n ${ncores} sleep 600) &&
+	id=$(flux submit -n ${ncores} sleep 600) &&
 	flux job wait-event ${id} start &&
 	echo ${id} >longjob
 '
 
 test_expect_success 'flux-queue: submit a job and make sure alloc sent' '
-	id=$(flux mini submit --flags debug /bin/true) &&
+	id=$(flux submit --flags debug /bin/true) &&
 	flux job wait-event ${id} debug.alloc-request
 '
 
@@ -183,7 +183,7 @@ test_expect_success 'flux-queue: stop canceled alloc request' '
 
 test_expect_success 'flux-queue: start scheduling and cancel long job' '
 	flux queue start &&
-	flux job cancel $(cat longjob)
+	flux cancel $(cat longjob)
 '
 
 test_expect_success 'flux-queue: queue empties out' '
@@ -195,7 +195,7 @@ test_expect_success 'flux-queue: unload scheduler' '
 '
 
 test_expect_success 'flux-queue: submit a job to ping scheduler' '
-	flux mini submit --flags debug /bin/true
+	flux submit --flags debug /bin/true
 '
 
 wait_for_sched_offline() {
@@ -240,12 +240,12 @@ test_expect_success 'flux-queue: job in queue ran' '
 
 test_expect_success 'flux-queue: submit a long job that uses all cores' '
 	ncores=$(flux resource list -s up -no {ncores}) &&
-	flux mini submit -n ${ncores} sleep 600
+	flux submit -n ${ncores} sleep 600
 '
 
 test_expect_success 'flux-queue: submit 2 more jobs' '
-	flux mini submit /bin/true &&
-	flux mini submit /bin/true
+	flux submit /bin/true &&
+	flux submit /bin/true
 '
 
 test_expect_success 'flux-queue: there are 3 active jobs' '
@@ -268,7 +268,7 @@ test_expect_success 'flux-queue: queue status -v shows expected counts' '
 
 test_expect_success 'flux-queue: stop queue and cancel long job' '
 	flux queue stop &&
-	flux job cancelall -f -S RUN
+	flux cancel --all -S RUN
 '
 
 test_expect_success 'flux-queue: queue becomes idle' '
@@ -383,14 +383,19 @@ test_expect_success 'configure batch,debug queues' '
 	[queues.debug]
 	EOT
 '
-test_expect_success 'jobs may be submitted to either queue' '
-	flux mini submit -q batch /bin/true &&
-	flux mini submit -q debug /bin/true
+test_expect_success 'queues enabled and stopped by default' '
+	flux queue status >mqstatus_default.out &&
+	test $(grep -c "submission is enabled" mqstatus_default.out) -eq 2 &&
+	test $(grep -c "Scheduling is stopped" mqstatus_default.out) -eq 2
 '
-test_expect_success 'flux-queue status reports all queues' '
-	flux queue status >mqstatus.out &&
-	grep batch mqstatus.out &&
-	grep debug mqstatus.out
+test_expect_success 'start queues' '
+	flux queue start --all &&
+	flux queue status >mqstatus_initial.out &&
+	test $(grep -c "Scheduling is started" mqstatus_initial.out) -eq 2
+'
+test_expect_success 'jobs may be submitted to either queue' '
+	flux submit -q batch /bin/true &&
+	flux submit -q debug /bin/true
 '
 test_expect_success 'flux-queue status can show one queue' '
 	flux queue status -q debug >mqstatus_debug.out &&
@@ -406,8 +411,8 @@ test_expect_success 'flux-queue disable --all affects all queues' '
 	test $(grep -c "submission is disabled: test reason" mqstatus_dis.out) -eq 2
 '
 test_expect_success 'jobs may not be submitted to either queue' '
-	test_must_fail flux mini submit -q batch /bin/true &&
-	test_must_fail flux mini submit -q debug /bin/true
+	test_must_fail flux submit -q batch /bin/true &&
+	test_must_fail flux submit -q debug /bin/true
 '
 test_expect_success 'flux-queue enable without --queue or --all fails' '
 	test_must_fail flux queue enable
@@ -425,8 +430,8 @@ test_expect_success 'flux-queue disable can do one queue' '
 	flux queue status >mqstatus_batchdis.out &&
 	test $(grep -c "submission is enabled" mqstatus_batchdis.out) -eq 1 &&
 	test $(grep -c "submission is disabled: nobatch" mqstatus_batchdis.out) -eq 1 &&
-	test_must_fail flux mini submit -q batch /bin/true &&
-	flux mini submit -q debug /bin/true
+	test_must_fail flux submit -q batch /bin/true &&
+	flux submit -q debug /bin/true
 '
 test_expect_success 'flux-queue enable can do one queue' '
 	flux queue enable -q batch > mqenable_batch.out &&
@@ -434,8 +439,8 @@ test_expect_success 'flux-queue enable can do one queue' '
 	test $(grep -c "submission is enabled" mqenable_batch.out) -eq 1 &&
 	flux queue status >mqstatus_batchena.out &&
 	test $(grep -c "submission is enabled" mqstatus_batchena.out) -eq 2 &&
-	flux mini submit -q batch /bin/true &&
-	flux mini submit -q debug /bin/true
+	flux submit -q batch /bin/true &&
+	flux submit -q debug /bin/true
 '
 
 
@@ -453,8 +458,8 @@ test_expect_success 'flux-queue stop w/o --all affects all queues but outputs wa
 	test $(grep -c "Scheduling is stopped: test reasons" mqstatus_stop2.out) -eq 2
 '
 test_expect_success 'jobs may be submitted to either queue' '
-	flux mini submit --wait-event=priority -q batch /bin/true > job_batch1.id &&
-	flux mini submit --wait-event=priority -q debug /bin/true > job_debug1.id
+	flux submit --wait-event=priority -q batch /bin/true > job_batch1.id &&
+	flux submit --wait-event=priority -q debug /bin/true > job_debug1.id
 '
 
 wait_state() {
@@ -482,7 +487,7 @@ test_expect_success 'submitted jobs are not running' '
 '
 test_expect_success 'flux-queue start --all affects all queues' '
 	flux queue start -a > mqstart.out &&
-	test $(grep -c "Scheduling is started" mqstatus.out) -eq 2 &&
+	test $(grep -c "Scheduling is started" mqstart.out) -eq 2 &&
 	flux queue status >mqstatus_start.out &&
 	test $(grep -c "Scheduling is started" mqstatus_start.out) -eq 2
 '
@@ -507,8 +512,8 @@ test_expect_success 'flux-queue stop can do one queue' '
 	flux queue status >mqstatus_batchstop.out &&
 	test $(grep -c "Scheduling is started" mqstatus_batchstop.out) -eq 1 &&
 	test $(grep -c "Scheduling is stopped: nobatch" mqstatus_batchstop.out) -eq 1 &&
-	flux mini submit -q batch /bin/true > job_batch2.id &&
-	flux mini submit -q debug /bin/true > job_debug2.id
+	flux submit -q batch /bin/true > job_batch2.id &&
+	flux submit -q debug /bin/true > job_debug2.id
 '
 test_expect_success 'check one job ran, other job didnt' '
 	wait_state $(cat job_debug2.id) INACTIVE &&
@@ -528,19 +533,34 @@ test_expect_success 'previously submitted job run to completion' '
 	flux jobs -n -o "{state}" $(cat job_batch2.id) | grep INACTIVE
 '
 
-# for this test we pick one the first queue's name to stop, but we don't care
-# which one it is
-test_expect_success HAVE_JQ 'flux-queue: stop with one queue and --nocheckpoint works' '
-	flux queue start --all &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[0].start == true" &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[1].start == true" &&
-	flux kvs get checkpoint.job-manager | jq -r ".queue[0].name" > name.out &&
-	flux queue stop -q $(cat name.out) --nocheckpoint nocheckpoint &&
-	flux queue status >mqstatus_nocheckpoint.out &&
-	test $(grep -c "Scheduling is started" mqstatus_nocheckpoint.out) -eq 1 &&
-	test $(grep -c "Scheduling is stopped: nocheckpoint" mqstatus_nocheckpoint.out) -eq 1 &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[0].start == true" &&
-	flux kvs get checkpoint.job-manager | jq -e ".queue[1].start == true"
+test_expect_success HAVE_JQ 'flux-queue: stop with named queues and --nocheckpoint works' '
+	mkdir -p conf.d &&
+	cat >conf.d/queues.toml <<-EOT &&
+	[queues.debug]
+	[queues.batch]
+	EOT
+	cat >stopqueues.sh <<-EOT &&
+	flux queue start --all
+	flux queue stop --all
+	EOT
+	cat >stopqueuesnocheckpoint.sh <<-EOT &&
+	flux queue start --all
+	flux queue stop --all --nocheckpoint
+	EOT
+	chmod +x ./stopqueues.sh &&
+	chmod +x ./stopqueuesnocheckpoint.sh &&
+	flux start -o,--config-path=$(pwd)/conf.d \
+	    -o,-Scontent.dump=dump_queue_named_nocheckpoint1.tar \
+	    ./stopqueues.sh &&
+	tar -xvf dump_queue_named_nocheckpoint1.tar &&
+	cat checkpoint/job-manager | jq -e ".queue[0].start == false" &&
+	cat checkpoint/job-manager | jq -e ".queue[1].start == false" &&
+	flux start -o,--config-path=$(pwd)/conf.d \
+	    -o,-Scontent.dump=dump_queue_named_nocheckpoint2.tar \
+	    ./stopqueuesnocheckpoint.sh &&
+	tar -xvf dump_queue_named_nocheckpoint2.tar &&
+	cat checkpoint/job-manager | jq -e ".queue[0].start == true" &&
+	cat checkpoint/job-manager | jq -e ".queue[1].start == true"
 '
 
 test_expect_success 'flux-queue: quiet option works with one queue' '

@@ -20,7 +20,9 @@ AM_CPPFLAGS = \
 fluxcmd_ldadd = \
 	$(top_builddir)/src/common/libkvs/libkvs.la \
 	$(top_builddir)/src/common/librlist/librlist.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
@@ -29,16 +31,33 @@ fluxcmd_ldadd = \
 	$(LIBPTHREAD) \
 	$(HWLOC_LIBS) \
 	$(JANSSON_LIBS) \
-	$(LIBARCHIVE_LIBS)
+	$(LIBARCHIVE_LIBS) \
+	$(PMIX_LIBS)
 
 LDADD = $(fluxcmd_ldadd)
 
 EXTRA_DIST = \
 	builtin-cmds-list.sh
 CLEANFILES = \
-	builtin-cmds.c
+	builtin-cmds.c \
+	flux-pkill.py
+
 BUILT_SOURCES = \
-	builtin-cmds.c
+	builtin-cmds.c \
+	flux-pkill.py
+
+flux-pkill.py:
+	$(AM_V_GEN)$(LN_S) $(srcdir)/flux-pgrep.py flux-pkill.py
+
+install-exec-hook:
+	$(AM_V_at)echo Linking flux-pkill to flux-pgrep && \
+	 (cd $(DESTDIR)$(fluxcmddir) && \
+	  rm -f flux-pkill.py && \
+	  $(LN_S) flux-pgrep.py flux-pkill.py)
+
+uninstall-local:
+	$(AM_V_at)echo Removing $(fluxcmddir)/flux-pkill.py && \
+	  rm -f $(fluxcmddir)/flux-pkill.py
 
 bin_PROGRAMS = flux
 flux_SOURCES = \
@@ -75,7 +94,13 @@ nodist_flux_SOURCES = \
 dist_fluxcmd_SCRIPTS = \
 	flux-cron \
 	flux-mini.py \
+	flux-alloc.py \
+	flux-batch.py \
+	flux-run.py \
+	flux-submit.py \
+	flux-bulksubmit.py \
 	flux-jobs.py \
+	flux-fortune.py \
 	flux-resource.py \
 	flux-admin.py \
 	flux-jobtap.py \
@@ -84,7 +109,10 @@ dist_fluxcmd_SCRIPTS = \
 	flux-job-exec-override.py \
 	flux-perilog-run.py \
 	flux-uri.py \
-	flux-pstree.py
+	flux-pstree.py \
+	flux-pgrep.py \
+	flux-queue.py \
+	flux-cancel.py
 
 fluxcmd_PROGRAMS = \
 	flux-terminus \
@@ -96,7 +124,6 @@ fluxcmd_PROGRAMS = \
 	flux-kvs \
 	flux-start \
 	flux-job \
-	flux-queue \
 	flux-exec \
 	flux-R \
 	flux-top
@@ -104,6 +131,7 @@ fluxcmd_PROGRAMS = \
 flux_start_LDADD = \
 	$(fluxcmd_ldadd) \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libczmqcontainers/libczmqcontainers.la
 
 flux_job_LDADD = \

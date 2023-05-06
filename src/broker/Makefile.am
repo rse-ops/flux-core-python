@@ -9,7 +9,6 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir)/src/include \
 	-I$(top_srcdir)/src/common/libccan \
 	-I$(top_builddir)/src/common/libflux \
-	$(PMIX_CFLAGS) \
 	$(ZMQ_CFLAGS) \
 	$(LIBUUID_CFLAGS) \
 	$(JANSSON_CFLAGS) \
@@ -60,10 +59,6 @@ libbroker_la_SOURCES = \
 	boot_config.c \
 	boot_pmi.h \
 	boot_pmi.c \
-	pmiutil.h \
-	pmiutil.c \
-	liblist.h \
-	liblist.c \
 	publisher.h \
 	publisher.c \
 	groups.h \
@@ -77,21 +72,21 @@ flux_broker_LDADD = \
 	$(builddir)/libbroker.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
+	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
 	$(ZMQ_LIBS) \
 	$(LIBUUID_LIBS) \
 	$(JANSSON_LIBS) \
-	$(PMIX_LIBS) \
 	$(LIBDL)
 
 flux_broker_LDFLAGS =
 
 TESTS = test_attr.t \
 	test_service.t \
-	test_liblist.t \
-	test_pmiutil.t \
 	test_boot_config.t \
 	test_runat.t \
 	test_overlay.t \
@@ -102,12 +97,10 @@ test_ldadd = \
 	$(top_builddir)/src/common/libtestutil/libtestutil.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
-	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libtap/libtap.la \
 	$(ZMQ_LIBS) \
-	$(JANSSON_LIBS) \
-	$(PMIX_LIBS)
+	$(JANSSON_LIBS)
 
 test_ldflags = \
 	-no-install
@@ -132,16 +125,6 @@ test_service_t_SOURCES = test/service.c
 test_service_t_CPPFLAGS = $(test_cppflags)
 test_service_t_LDADD = $(test_ldadd)
 test_service_t_LDFLAGS = $(test_ldflags)
-
-test_liblist_t_SOURCES = test/liblist.c
-test_liblist_t_CPPFLAGS = $(test_cppflags)
-test_liblist_t_LDADD = $(test_ldadd)
-test_liblist_t_LDFLAGS = $(test_ldflags)
-
-test_pmiutil_t_SOURCES = test/pmiutil.c
-test_pmiutil_t_CPPFLAGS = $(test_cppflags)
-test_pmiutil_t_LDADD = $(test_ldadd)
-test_pmiutil_t_LDFLAGS = $(test_ldflags)
 
 test_boot_config_t_SOURCES = test/boot_config.c
 test_boot_config_t_CPPFLAGS = $(test_cppflags)

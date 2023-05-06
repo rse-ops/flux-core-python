@@ -21,6 +21,7 @@ from flux.core.inner import raw
 from flux.job.JobID import JobID
 from flux.job.stats import JobStats
 from flux.memoized_property import memoized_property
+from flux.resource import SchedResourceList
 from flux.uri import JobURI
 
 try:

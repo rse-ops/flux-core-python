@@ -31,7 +31,6 @@
 #include "command.h"
 #include "local.h"
 #include "remote.h"
-#include "server.h"
 #include "util.h"
 
 /*
@@ -41,7 +40,7 @@
 void channel_destroy (void *arg)
 {
     struct subprocess_channel *c = arg;
-    if (c && c->magic == CHANNEL_MAGIC) {
+    if (c) {
         if (c->name)
             free (c->name);
 
@@ -63,7 +62,6 @@ void channel_destroy (void *arg)
         flux_watcher_destroy (c->out_idle_w);
         flux_watcher_destroy (c->out_check_w);
 
-        c->magic = ~CHANNEL_MAGIC;
         free (c);
     }
 }
@@ -78,8 +76,6 @@ struct subprocess_channel *channel_create (flux_subprocess_t *p,
 
     if (!c)
         return NULL;
-
-    c->magic = CHANNEL_MAGIC;
 
     c->p = p;
     c->output_f = output_f;
@@ -142,7 +138,7 @@ struct idset *subprocess_childfds (flux_subprocess_t *p)
 
 static void subprocess_free (flux_subprocess_t *p)
 {
-    if (p && p->magic == SUBPROCESS_MAGIC) {
+    if (p) {
         int saved_errno = errno;
         flux_cmd_destroy (p->cmd);
 
@@ -165,7 +161,6 @@ static void subprocess_free (flux_subprocess_t *p)
         if (p->f)
             flux_future_destroy (p->f);
 
-        p->magic = ~SUBPROCESS_MAGIC;
         free (p);
         errno = saved_errno;
     }
@@ -185,7 +180,10 @@ static flux_subprocess_t * subprocess_create (flux_t *h,
     if (!p)
         return NULL;
 
-    p->magic = SUBPROCESS_MAGIC;
+    if (h) {
+        p->llog = flux_aux_get (h, "flux::subprocess_llog_fn");
+        p->llog_data = flux_aux_get (h, "flux::subprocess_llog_data");
+    }
 
     /* init fds, so on error we don't accidentally close stdin
      * (i.e. fd == 0)
@@ -227,55 +225,6 @@ error:
     return NULL;
 }
 
-static void subprocess_server_destroy (void *arg)
-{
-    flux_subprocess_server_t *s = arg;
-    if (s && s->magic == SUBPROCESS_SERVER_MAGIC) {
-        /* s->handlers handled in server_stop, this is for destroying
-         * things only
-         */
-        zhash_destroy (&s->subprocesses);
-        free (s->local_uri);
-
-        flux_watcher_destroy (s->terminate_timer_w);
-        flux_watcher_destroy (s->terminate_prep_w);
-        flux_watcher_destroy (s->terminate_idle_w);
-        flux_watcher_destroy (s->terminate_check_w);
-
-        s->magic = ~SUBPROCESS_SERVER_MAGIC;
-        free (s);
-    }
-}
-
-static flux_subprocess_server_t *subprocess_server_create (flux_t *h,
-                                                           const char *local_uri,
-                                                           int rank)
-{
-    flux_subprocess_server_t *s = calloc (1, sizeof (*s));
-    int save_errno;
-
-    if (!s)
-        return NULL;
-
-    s->magic = SUBPROCESS_SERVER_MAGIC;
-    s->h = h;
-    if (!(s->r = flux_get_reactor (h)))
-        goto error;
-    if (!(s->subprocesses = zhash_new ()))
-        goto error;
-    if (!(s->local_uri = strdup (local_uri)))
-        goto error;
-    s->rank = rank;
-
-    return s;
-
-error:
-    save_errno = errno;
-    subprocess_server_destroy (s);
-    errno = save_errno;
-    return NULL;
-}
-
 /*
  * Accessors
  */
@@ -284,94 +233,6 @@ int subprocess_status (flux_subprocess_t *p)
 {
     assert (p);
     return p->status;
-}
-
-/*
- *  General support:
- */
-
-flux_subprocess_server_t *flux_subprocess_server_start (flux_t *h,
-                                                        const char *local_uri,
-                                                        uint32_t rank)
-{
-    flux_subprocess_server_t *s = NULL;
-    int save_errno;
-
-    if (!h || !local_uri) {
-        errno = EINVAL;
-        goto error;
-    }
-
-    if (!(s = subprocess_server_create (h, local_uri, rank)))
-        goto error;
-
-    if (server_start (s) < 0)
-        goto error;
-
-    return s;
-
-error:
-    save_errno = errno;
-    subprocess_server_destroy (s);
-    errno = save_errno;
-    return NULL;
-}
-
-void flux_subprocess_server_set_auth_cb (flux_subprocess_server_t *s,
-                                         flux_subprocess_server_auth_f fn,
-                                         void *arg)
-{
-    s->auth_cb = fn;
-    s->arg = arg;
-}
-
-void flux_subprocess_server_stop (flux_subprocess_server_t *s)
-{
-    if (s && s->magic == SUBPROCESS_SERVER_MAGIC) {
-        server_stop (s);
-        server_terminate_subprocesses (s);
-        subprocess_server_destroy (s);
-    }
-}
-
-int flux_subprocess_server_subprocesses_kill (flux_subprocess_server_t *s,
-                                              int signum,
-                                              double wait_time)
-{
-    int rv = -1;
-
-    if (!s || s->magic != SUBPROCESS_SERVER_MAGIC) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    if (!zhash_size (s->subprocesses))
-        return 0;
-
-    if (server_terminate_setup (s, wait_time) < 0)
-        goto error;
-
-    if (server_signal_subprocesses (s, signum) < 0)
-        goto error;
-
-    if (server_terminate_wait (s) < 0)
-        goto error;
-
-    rv = 0;
-error:
-    server_terminate_cleanup (s);
-    return rv;
-}
-
-int flux_subprocess_server_terminate_by_uuid (flux_subprocess_server_t *s,
-                                              const char *id)
-{
-    if (!s || s->magic != SUBPROCESS_SERVER_MAGIC || !id) {
-        errno = EINVAL;
-        return -1;
-    }
-
-    return server_terminate_by_uuid (s, id);
 }
 
 /*
@@ -452,16 +313,11 @@ static flux_subprocess_state_t state_change_next (flux_subprocess_t *p)
 
     switch (p->state_reported) {
     case FLUX_SUBPROCESS_INIT:
-        /* next state must be RUNNING or EXEC_FAILED */
-        if (p->state == FLUX_SUBPROCESS_EXEC_FAILED)
-            return FLUX_SUBPROCESS_EXEC_FAILED;
-        else /* p->state == FLUX_SUBPROCESS_RUNNING
-                || p->state == FLUX_SUBPROCESS_EXITED */
-            return FLUX_SUBPROCESS_RUNNING;
+        /* next state must be RUNNING */
+        return FLUX_SUBPROCESS_RUNNING;
     case FLUX_SUBPROCESS_RUNNING:
         /* next state is EXITED */
         return FLUX_SUBPROCESS_EXITED;
-    case FLUX_SUBPROCESS_EXEC_FAILED:
     case FLUX_SUBPROCESS_EXITED:
     case FLUX_SUBPROCESS_FAILED:
     case FLUX_SUBPROCESS_STOPPED:
@@ -500,8 +356,7 @@ static void state_change_check_cb (flux_reactor_t *r,
     }
 
     /* once we hit one of these states, no more state changes */
-    if (p->state_reported == FLUX_SUBPROCESS_EXEC_FAILED
-        || p->state_reported == FLUX_SUBPROCESS_EXITED
+    if (p->state_reported == FLUX_SUBPROCESS_EXITED
         || p->state_reported == FLUX_SUBPROCESS_FAILED) {
         flux_watcher_stop (p->state_prep_w);
         flux_watcher_stop (p->state_check_w);
@@ -703,7 +558,7 @@ static int check_local_only_cmd_options (const flux_cmd_t *cmd)
     /* check for options that do not apply to remote subprocesses */
     const char *substrings[] = { "STREAM_STOP", NULL };
 
-    return flux_cmd_find_opts (cmd, substrings);
+    return cmd_find_opts (cmd, substrings);
 }
 
 flux_subprocess_t *flux_rexec (flux_t *h, int rank, int flags,
@@ -771,7 +626,6 @@ int flux_subprocess_stream_start (flux_subprocess_t *p, const char *stream)
     flux_buffer_t *fb;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -824,7 +678,6 @@ int flux_subprocess_stream_stop (flux_subprocess_t *p, const char *stream)
     flux_buffer_t *fb;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -861,7 +714,6 @@ int flux_subprocess_stream_status (flux_subprocess_t *p, const char *stream)
     int ret;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -891,7 +743,6 @@ int flux_subprocess_write (flux_subprocess_t *p, const char *stream,
     int ret;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -948,7 +799,6 @@ int flux_subprocess_close (flux_subprocess_t *p, const char *stream)
     struct subprocess_channel *c;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -970,8 +820,7 @@ int flux_subprocess_close (flux_subprocess_t *p, const char *stream)
                 return -1;
             }
         }
-        /* else p->state == FLUX_SUBPROCESS_EXEC_FAILED
-           || p->state == FLUX_SUBPROCESS_EXITED
+        /* else p->state == FLUX_SUBPROCESS_EXITED
            || p->state == FLUX_SUBPROCESS_FAILED
         */
         c->closed = true;
@@ -1000,7 +849,6 @@ static const char *subprocess_read (flux_subprocess_t *p,
     const char *ptr;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return NULL;
@@ -1078,7 +926,6 @@ int flux_subprocess_read_stream_closed (flux_subprocess_t *p, const char *stream
     flux_buffer_t *fb;
 
     if (!p || !stream
-           || p->magic != SUBPROCESS_MAGIC
            || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
@@ -1141,7 +988,7 @@ flux_future_t *flux_subprocess_kill (flux_subprocess_t *p, int signum)
 {
     flux_future_t *f = NULL;
 
-    if (!p || p->magic != SUBPROCESS_MAGIC || (p->local && p->in_hook)
+    if (!p || (p->local && p->in_hook)
         || !signum) {
         errno = EINVAL;
         return NULL;
@@ -1187,7 +1034,7 @@ flux_future_t *flux_subprocess_kill (flux_subprocess_t *p, int signum)
 
 void flux_subprocess_ref (flux_subprocess_t *p)
 {
-    if (p && p->magic == SUBPROCESS_MAGIC) {
+    if (p) {
         if (p->local && p->in_hook)
             return;
         p->refcount++;
@@ -1196,7 +1043,7 @@ void flux_subprocess_ref (flux_subprocess_t *p)
 
 void flux_subprocess_unref (flux_subprocess_t *p)
 {
-    if (p && p->magic == SUBPROCESS_MAGIC) {
+    if (p) {
         if (p->local && p->in_hook)
             return;
         if (--p->refcount == 0)
@@ -1206,7 +1053,7 @@ void flux_subprocess_unref (flux_subprocess_t *p)
 
 flux_subprocess_state_t flux_subprocess_state (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1219,8 +1066,6 @@ const char *flux_subprocess_state_string (flux_subprocess_state_t state)
     {
     case FLUX_SUBPROCESS_INIT:
         return "Init";
-    case FLUX_SUBPROCESS_EXEC_FAILED:
-        return "Exec Failed";
     case FLUX_SUBPROCESS_RUNNING:
         return "Running";
     case FLUX_SUBPROCESS_EXITED:
@@ -1235,7 +1080,7 @@ const char *flux_subprocess_state_string (flux_subprocess_state_t state)
 
 int flux_subprocess_rank (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1248,24 +1093,20 @@ int flux_subprocess_rank (flux_subprocess_t *p)
 
 int flux_subprocess_fail_errno (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
-    if (p->state != FLUX_SUBPROCESS_EXEC_FAILED
-        && p->state != FLUX_SUBPROCESS_FAILED) {
+    if (p->state != FLUX_SUBPROCESS_FAILED) {
         errno = EINVAL;
         return -1;
     }
-    if (p->state == FLUX_SUBPROCESS_EXEC_FAILED)
-        return p->exec_failed_errno;
-    else
-        return p->failed_errno;
+    return p->failed_errno;
 }
 
 int flux_subprocess_status (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1278,7 +1119,7 @@ int flux_subprocess_status (flux_subprocess_t *p)
 
 int flux_subprocess_exit_code (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1295,7 +1136,7 @@ int flux_subprocess_exit_code (flux_subprocess_t *p)
 
 int flux_subprocess_signaled (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1312,7 +1153,7 @@ int flux_subprocess_signaled (flux_subprocess_t *p)
 
 pid_t flux_subprocess_pid (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return -1;
     }
@@ -1329,7 +1170,7 @@ pid_t flux_subprocess_pid (flux_subprocess_t *p)
 
 flux_cmd_t * flux_subprocess_get_cmd (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return NULL;
     }
@@ -1338,7 +1179,7 @@ flux_cmd_t * flux_subprocess_get_cmd (flux_subprocess_t *p)
 
 flux_reactor_t * flux_subprocess_get_reactor (flux_subprocess_t *p)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC) {
+    if (!p) {
         errno = EINVAL;
         return NULL;
     }
@@ -1348,7 +1189,7 @@ flux_reactor_t * flux_subprocess_get_reactor (flux_subprocess_t *p)
 int flux_subprocess_aux_set (flux_subprocess_t *p,
                              const char *name, void *x, flux_free_f free_fn)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC || (p->local && p->in_hook)) {
+    if (!p || (p->local && p->in_hook)) {
         errno = EINVAL;
         return -1;
     }
@@ -1357,11 +1198,21 @@ int flux_subprocess_aux_set (flux_subprocess_t *p,
 
 void * flux_subprocess_aux_get (flux_subprocess_t *p, const char *name)
 {
-    if (!p || p->magic != SUBPROCESS_MAGIC || (p->local && p->in_hook)) {
+    if (!p || (p->local && p->in_hook)) {
         errno = EINVAL;
         return NULL;
     }
     return aux_get (p->aux, name);
+}
+
+int flux_set_default_subprocess_log (flux_t *h,
+                                     subprocess_log_f log_fn,
+                                     void *log_data)
+{
+    if (flux_aux_set (h, "flux::subprocess_llog_fn", log_fn, NULL) < 0
+        || flux_aux_set (h, "flux::subprocess_llog_data", log_data, NULL) < 0)
+        return -1;
+    return 0;
 }
 
 /*

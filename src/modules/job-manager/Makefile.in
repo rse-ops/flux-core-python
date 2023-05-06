@@ -119,7 +119,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -187,7 +186,7 @@ am_libjob_manager_la_OBJECTS = job.lo conf.lo submit.lo drain.lo \
 	prioritize.lo queue.lo jobtap.lo plugins/priority-default.lo \
 	plugins/limit-job-size.lo plugins/limit-duration.lo \
 	plugins/dependency-after.lo plugins/begin-time.lo \
-	plugins/validate-duration.lo
+	plugins/validate-duration.lo plugins/history.lo
 libjob_manager_la_OBJECTS = $(am_libjob_manager_la_OBJECTS)
 plugins_alloc_bypass_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libflux-internal.la \
@@ -630,8 +629,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -841,7 +838,8 @@ libjob_manager_la_SOURCES = \
 	plugins/limit-duration.c \
 	plugins/dependency-after.c \
 	plugins/begin-time.c \
-	plugins/validate-duration.c
+	plugins/validate-duration.c \
+	plugins/history.c
 
 fluxinclude_HEADERS = \
 	jobtap.h
@@ -1096,6 +1094,8 @@ plugins/begin-time.lo: plugins/$(am__dirstamp) \
 	plugins/$(DEPDIR)/$(am__dirstamp)
 plugins/validate-duration.lo: plugins/$(am__dirstamp) \
 	plugins/$(DEPDIR)/$(am__dirstamp)
+plugins/history.lo: plugins/$(am__dirstamp) \
+	plugins/$(DEPDIR)/$(am__dirstamp)
 
 libjob-manager.la: $(libjob_manager_la_OBJECTS) $(libjob_manager_la_DEPENDENCIES) $(EXTRA_libjob_manager_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libjob_manager_la_OBJECTS) $(libjob_manager_la_LIBADD) $(LIBS)
@@ -1199,6 +1199,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/alloc-bypass.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/begin-time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/dependency-after.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/history.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/limit-duration.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/limit-job-size.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@plugins/$(DEPDIR)/perilog.Plo@am__quote@

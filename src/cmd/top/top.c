@@ -17,6 +17,7 @@
 
 #include "src/common/libutil/uri.h"
 #include "src/common/libutil/errprintf.h"
+#include "ccan/str/str.h"
 #include "top.h"
 
 static const double job_activity_rate_limit = 2;
@@ -135,7 +136,7 @@ static flux_t *open_flux_instance (const char *target, flux_error_t *errp)
  * with its internal buffer by calling refresh() below to prevent unwanted
  * screen updates on the first keypress.
  */
-static void initialize_curses (void)
+static void initialize_curses (int color)
 {
     char *cap;
     initscr ();
@@ -146,11 +147,20 @@ static void initialize_curses (void)
 
     use_default_colors ();
     start_color ();
-    init_pair (TOP_COLOR_YELLOW, COLOR_YELLOW, -1);
-    init_pair (TOP_COLOR_RED, COLOR_RED, -1);
-    init_pair (TOP_COLOR_GREEN, COLOR_GREEN, -1);
-    init_pair (TOP_COLOR_BLUE, COLOR_BLUE, -1);
-    init_pair (TOP_COLOR_BLUE_HIGHLIGHT, COLOR_BLACK, COLOR_BLUE);
+    if (color) {
+        init_pair (TOP_COLOR_YELLOW, COLOR_YELLOW, -1);
+        init_pair (TOP_COLOR_RED, COLOR_RED, -1);
+        init_pair (TOP_COLOR_GREEN, COLOR_GREEN, -1);
+        init_pair (TOP_COLOR_BLUE, COLOR_BLUE, -1);
+        init_pair (TOP_COLOR_BLUE_HIGHLIGHT, COLOR_BLACK, COLOR_BLUE);
+    }
+    else {
+        init_pair (TOP_COLOR_YELLOW, -1, -1);
+        init_pair (TOP_COLOR_RED, -1, -1);
+        init_pair (TOP_COLOR_GREEN, -1, -1);
+        init_pair (TOP_COLOR_BLUE, -1, -1);
+        init_pair (TOP_COLOR_BLUE_HIGHLIGHT, -1, -1);
+    }
     clear ();
     refresh ();
 }
@@ -162,6 +172,17 @@ int top_run (struct top *top, int reactor_flags)
      */
     wrefresh (curscr);
     return flux_reactor_run (flux_get_reactor (top->h), reactor_flags);
+}
+
+void test_exit_check (struct top *top)
+{
+    /* 3 exit counts for
+     * - joblist output
+     * - summary stats output
+     * - summary resource output
+     */
+    if (top->test_exit && ++top->test_exit_count == 3)
+        flux_reactor_stop (flux_get_reactor (top->h));
 }
 
 static const struct flux_msg_handler_spec htab[] = {
@@ -179,6 +200,10 @@ void top_destroy (struct top *top)
         joblist_pane_destroy (top->joblist_pane);
         summary_pane_destroy (top->summary_pane);
         keys_destroy (top->keys);
+        json_decref (top->queue_constraint);
+        json_decref (top->flux_config);
+        if (top->testf)
+            fclose (top->testf);
         flux_close (top->h);
         free (top->title);
         free (top);
@@ -214,8 +239,47 @@ static char * build_title (struct top *top, const char *title)
     return strdup (title);
 }
 
+static void get_config (struct top *top)
+{
+    flux_future_t *f;
+    json_t *o;
+
+    if (!(f = flux_rpc (top->h, "config.get", NULL, FLUX_NODEID_ANY, 0))
+        || flux_rpc_get_unpack (f, "o", &o) < 0)
+        fatal (errno, "Error fetching flux config");
+
+    top->flux_config = json_incref (o);
+    flux_future_destroy (f);
+}
+
+static void setup_constraint (struct top *top)
+{
+    json_t *tmp;
+    json_t *requires = NULL;
+
+    /* first verify queue legit */
+    if (json_unpack (top->flux_config,
+                     "{s:{s:o}}",
+                     "queues", top->queue, &tmp) < 0)
+        fatal (0, "queue %s not configured", top->queue);
+
+    /* not required to be configured */
+    (void) json_unpack (top->flux_config,
+                        "{s:{s:{s:o}}}",
+                        "queues",
+                          top->queue,
+                            "requires",
+                            &requires);
+    if (requires) {
+        if (!(top->queue_constraint = json_pack ("{s:O}",
+                                                 "properties", requires)))
+            fatal (0, "Error creating queue constraints");
+    }
+}
+
 struct top *top_create (const char *uri,
                         const char *title,
+                        const char *queue,
                         flux_error_t *errp)
 {
     struct top *top = calloc (1, sizeof (*top));
@@ -226,6 +290,15 @@ struct top *top_create (const char *uri,
     top->id = get_jobid (top->h);
     if (!(top->title = build_title (top, title)))
         goto fail;
+
+    get_config (top);
+
+    /* setup / configure before calls to joblist_pane_create() and
+     * summary_pane_create() below */
+    if (queue) {
+        top->queue = queue;
+        setup_constraint (top);
+    }
 
     flux_comms_error_set (top->h, comms_error, &top);
     top->refresh = flux_prepare_watcher_create (flux_get_reactor (top->h),
@@ -246,6 +319,15 @@ struct top *top_create (const char *uri,
         || flux_event_subscribe (top->h, "heartbeat.pulse") < 0)
         fatal (errno, "error subscribing to events");
 
+#if ASSUME_BROKEN_LOCALE
+    top->f_char = "f";
+#else
+    if (getenv ("FLUX_F58_FORCE_ASCII"))
+        top->f_char = "f";
+    else
+        top->f_char = "ƒ";
+#endif /* ASSUME_BROKEN_LOCALE */
+
     top->keys = keys_create (top);
     top->summary_pane = summary_pane_create (top);
     top->joblist_pane = joblist_pane_create (top);
@@ -255,9 +337,37 @@ fail:
     return NULL;
 }
 
+static int color_optparse (optparse_t *opts)
+{
+    const char *when;
+    int color = 0;
+
+    if (!(when = optparse_get_str (opts, "color", "auto")))
+        when = "always";
+    if (streq (when, "always"))
+        color = 1;
+    else if (streq (when, "never"))
+        color = 0;
+    else if (streq (when, "auto"))
+        color = isatty (STDOUT_FILENO) ? 1 : 0;
+    else
+        fatal (0, "Invalid argument to --color: '%s'", when);
+    return color;
+}
+
 static struct optparse_option cmdopts[] = {
     { .name = "test-exit", .has_arg = 0, .flags = OPTPARSE_OPT_HIDDEN,
       .usage = "Exit after screen initialization, for testing",
+    },
+    { .name = "test-exit-dump", .has_arg = 1, .arginfo = "FILE",
+      .flags = OPTPARSE_OPT_HIDDEN,
+      .usage = "Dump joblist/summary data to file for testing",
+    },
+    { .name = "color", .has_arg = 2, .arginfo = "WHEN",
+      .usage = "Colorize output when supported; WHEN can be 'always' "
+               "(default if omitted), 'never', or 'auto' (default)." },
+    { .name = "queue", .key = 'q', .has_arg = 1, .arginfo = "NAME",
+      .usage = "Limit to jobs belonging to a specific queue",
     },
     OPTPARSE_TABLE_END,
 };
@@ -292,12 +402,23 @@ int main (int argc, char *argv[])
     }
     if (!isatty (STDIN_FILENO))
         fatal (0, "stdin is not a terminal");
-    initialize_curses ();
+    initialize_curses (color_optparse (opts));
 
-    if (!(top = top_create (target, NULL, &error)))
+    if (!(top = top_create (target,
+                            NULL,
+                            optparse_get_str (opts, "queue", NULL),
+                            &error)))
         fatal (0, "%s", error.text);
-    if (optparse_hasopt (opts, "test-exit"))
+    if (optparse_hasopt (opts, "test-exit")) {
+        const char *file;
         top->test_exit = 1;
+        if ((file = optparse_get_str (opts, "test-exit-dump", NULL))) {
+            mode_t umask_orig = umask (022);
+            if (!(top->testf = fopen (file, "w+")))
+                fatal (errno, "failed to open test dump file");
+            umask (umask_orig);
+        }
+    }
     if (top_run (top, reactor_flags) < 0)
         fatal (errno, "reactor loop unexpectedly terminated");
 

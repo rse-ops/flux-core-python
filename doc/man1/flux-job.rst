@@ -1,4 +1,5 @@
-.. flux-help-include: true
+.. flux-help-description: get job status, info, etc (see: flux help job)
+.. flux-help-section: jobs
 
 ===========
 flux-job(1)
@@ -8,9 +9,15 @@ flux-job(1)
 SYNOPSIS
 ========
 
+**flux** **job** **attach** [*OPTIONS*] *id*
+
 **flux** **job** **cancel** [*OPTIONS*] *ids...* [*--*] [*message...*]
 
 **flux** **job** **cancelall** [*OPTIONS*] [*message...*]
+
+**flux** **job** **status** [*OPTIONS*] *id [*id...*]
+
+**flux** **job** **wait** [*OPTIONS*] [*id*]
 
 **flux** **job** **kill** [*--signal=SIG*] *id* [*id...*]
 
@@ -22,12 +29,33 @@ SYNOPSIS
 
 **flux** **job** **taskmap** [*OPTIONS*] *id*|*taskmap*
 
+**flux** **job** **timeleft** [*OPTIONS*] [*id*]
+
 **flux** **job** **purge** [*OPTIONS*]
 
 DESCRIPTION
 ===========
 
 flux-job(1) performs various job related housekeeping functions.
+
+ATTACH
+======
+
+A job can be interactively attached to via ``flux job attach``.  This is
+typically used to watch stdout/stderr while a job is running or after it has
+completed.  It can also be used to feed stdin to a job.
+
+**-l, --label-io**
+   Label output by rank
+
+**-u, --unbuffered**
+   Do not buffer stdin. Note that when ``flux job attach`` is used in a
+   terminal, the terminal itself may line buffer stdin.
+
+**-i, --stdin-ranks=RANKS**
+   Send stdin to only those ranks in the **RANKS** idset. The standard input
+   for tasks not in **RANKS** will be closed. The default is to broadcast
+   stdin to all ranks.
 
 CANCEL
 ======
@@ -56,6 +84,47 @@ selected with:
 
 **-q, --quiet**
    Suppress output if no jobs match
+
+STATUS
+======
+
+Wait for job(s) to complete and exit with the largest exit code.
+
+**-e, --exception-exit-code=N**
+   Set the exit code for any jobs that terminate with an exception
+   (e.g. canceled jobs) to ``N``.
+
+**-j, --json**
+   Dump job result information from job eventlog.
+
+**-v, --verbose**
+   Increase verbosity of output.
+
+WAIT
+====
+
+A waitable job may be waited on with ``flux job wait``.  A specific job
+can be waited on by specifying a jobid.  If no jobid is specified, the
+command will wait for any waitable user job to complete, outputting that
+jobid before exiting.  This command will exit with error if the job is not
+successful.
+
+Compared to ``flux job status``, there are several advantages /
+disadvantages of using ``flux job wait``.  For a large number of jobs,
+``flux job wait`` is far more efficient, especially when used with the
+``--all`` option below.  In addition, job ids do not have to be specified
+to ``flux job wait``.
+
+The two major limitations are that jobs must be submitted with the
+waitable flag, which can only be done in user instances.  In addition,
+``flux job wait`` can only be called once per job.
+
+**-a, --all**
+   Wait for all waitable jobs.  Will exit with error if any jobs are
+   not successful.
+
+**-v, --verbose**
+   Emit a line of output for all jobs, not just failing ones.
 
 SIGNAL
 ======
@@ -142,6 +211,23 @@ support task mapping formats:
    *multiline* which prints the node ID of each task, one per line.
 
 One one of the above options may be used per call.
+
+TIMELEFT
+========
+
+The ``flux job timeleft`` utility reports the number of whole seconds left
+in the current or specified job time limit. If the job has expired or is
+complete, then this command reports ``0``. If the job does not have a time
+limit, then a large number (``UINT_MAX``) is reported.
+
+If ``flux job timeleft`` is called outside the context of a Flux job, or
+an invalid or pending job is targeted, then this command will exit with
+an error and diagnostic message.
+
+Options:
+
+**-H, --human**
+  Generate human readable output. Report results in Flux Standard Duration.
 
 PURGE
 =====

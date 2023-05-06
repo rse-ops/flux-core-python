@@ -19,6 +19,7 @@
 
 #include "src/common/libutil/fsd.h"
 #include "src/common/librlist/rlist.h"
+#include "ccan/str/str.h"
 
 #include "top.h"
 
@@ -46,6 +47,7 @@ struct stats {
     int run;
     int cleanup;
     int inactive;
+    int successful;
     int failed;
     int canceled;
     int timeout;
@@ -95,7 +97,11 @@ static void draw_timeleft (struct summary_pane *sum)
 static void draw_f (struct summary_pane *sum)
 {
     wattron (sum->win, COLOR_PAIR (TOP_COLOR_YELLOW));
-    mvwprintw (sum->win, level_dim.y_begin, level_dim.x_begin, "ƒ");
+    mvwprintw (sum->win,
+               level_dim.y_begin,
+               level_dim.x_begin,
+               "%s",
+               sum->top->f_char);
     wattroff (sum->win, COLOR_PAIR (TOP_COLOR_YELLOW));
 }
 
@@ -136,9 +142,18 @@ static void draw_stats (struct summary_pane *sum)
                stats_dim.x_length - 10,
                sum->stats.run + sum->stats.cleanup);
 
+    if (sum->top->testf) {
+        fprintf (sum->top->testf,
+                 "%d pending\n",
+                 sum->stats.depend + sum->stats.priority + sum->stats.sched);
+        fprintf (sum->top->testf,
+                 "%d running\n",
+                 sum->stats.run + sum->stats.cleanup);
+    }
+
     if (sum->show_details) {
         int failed = sum->stats.failed;
-        int complete = sum->stats.inactive - failed;
+        int complete = sum->stats.successful;
 
         if (complete)
             wattron (sum->win, COLOR_PAIR(TOP_COLOR_GREEN) | A_BOLD);
@@ -166,6 +181,15 @@ static void draw_stats (struct summary_pane *sum)
                    stats_dim.y_begin + 2,
                    stats_dim.x_begin + 5,
                    " failed");
+
+        if (sum->top->testf) {
+            fprintf (sum->top->testf,
+                     "%d complete\n",
+                     complete);
+            fprintf (sum->top->testf,
+                     "%d failed\n",
+                     failed);
+        }
     }
     else {
         mvwprintw (sum->win,
@@ -174,6 +198,11 @@ static void draw_stats (struct summary_pane *sum)
                    "%*d inactive",
                    stats_dim.x_length - 10,
                    sum->stats.inactive);
+        if (sum->top->testf) {
+            fprintf (sum->top->testf,
+                     "%d inactive\n",
+                     sum->stats.inactive);
+        }
     }
 }
 
@@ -182,7 +211,7 @@ static void draw_stats (struct summary_pane *sum)
  * "used" grows from the left in yellow; "down" grows from the right in red.
  * Fraction is used/total.
  */
-static void draw_bargraph (WINDOW *win, int y, int x, int x_length,
+static void draw_bargraph (struct summary_pane *sum, int y, int x, int x_length,
                            const char *name, struct resource_count res)
 {
     char prefix[16];
@@ -197,7 +226,7 @@ static void draw_bargraph (WINDOW *win, int y, int x, int x_length,
     snprintf (suffix, sizeof (suffix), "%d/%d]", res.used, res.total);
 
     int slots = x_length - strlen (prefix) - strlen (suffix) - 1;
-    mvwprintw (win,
+    mvwprintw (sum->win,
                y,
                x,
                "%s%*s%s",
@@ -205,35 +234,42 @@ static void draw_bargraph (WINDOW *win, int y, int x, int x_length,
                slots, "",
                suffix);
     /* Graph used */
-    wattron (win, COLOR_PAIR (TOP_COLOR_YELLOW));
+    wattron (sum->win, COLOR_PAIR (TOP_COLOR_YELLOW));
     for (int i = 0; i < ceil (((double)res.used / res.total) * slots); i++)
-        mvwaddch (win, y, x + strlen (prefix) + i, '|');
-    wattroff (win, COLOR_PAIR (TOP_COLOR_YELLOW));
+        mvwaddch (sum->win, y, x + strlen (prefix) + i, '|');
+    wattroff (sum->win, COLOR_PAIR (TOP_COLOR_YELLOW));
 
     /* Graph down */
-    wattron (win, COLOR_PAIR (TOP_COLOR_RED));
+    wattron (sum->win, COLOR_PAIR (TOP_COLOR_RED));
     for (int i = slots - 1;
          i >= slots - ceil (((double)res.down / res.total) * slots); i--) {
-        mvwaddch (win, y, x + strlen (prefix) + i, '|');
+        mvwaddch (sum->win, y, x + strlen (prefix) + i, '|');
     }
-    wattroff (win, COLOR_PAIR (TOP_COLOR_RED));
+    wattroff (sum->win, COLOR_PAIR (TOP_COLOR_RED));
+
+    if (sum->top->testf)
+        fprintf (sum->top->testf,
+                 "%s %d/%d\n",
+                 name,
+                 res.used,
+                 res.total);
 }
 
 static void draw_resource (struct summary_pane *sum)
 {
-    draw_bargraph (sum->win,
+    draw_bargraph (sum,
                    resource_dim.y_begin,
                    resource_dim.x_begin,
                    resource_dim.x_length,
                    "nodes",
                    sum->node);
-    draw_bargraph (sum->win,
+    draw_bargraph (sum,
                    resource_dim.y_begin + 1,
                    resource_dim.x_begin,
                    resource_dim.x_length,
                    "cores",
                    sum->core);
-    draw_bargraph (sum->win,
+    draw_bargraph (sum,
                    resource_dim.y_begin + 2,
                    resource_dim.x_begin,
                    resource_dim.x_length,
@@ -327,9 +363,12 @@ static int resource_count (json_t *o,
                            const char *name,
                            int *nnodes,
                            int *ncores,
-                           int *ngpus)
+                           int *ngpus,
+                           json_t *queue_constraint)
 {
     json_t *R;
+    struct rlist *rl_all = NULL;
+    struct rlist *rl_constraint = NULL;
     struct rlist *rl;
 
     if (!(R = json_object_get (o, name)))
@@ -338,12 +377,24 @@ static int resource_count (json_t *o,
         *nnodes = *ncores = *ngpus = 0;
         return 0;
     }
-    if (!(rl = rlist_from_json (R, NULL)))
+    if (!(rl_all = rlist_from_json (R, NULL)))
         return -1;
+    if (queue_constraint) {
+        flux_error_t error;
+        rl_constraint = rlist_copy_constraint (rl_all,
+                                               queue_constraint,
+                                               &error);
+        if (!rl_constraint)
+            fatal (errno, "failed to create constrained rlist: %s", error.text);
+        rl = rl_constraint;
+    }
+    else
+        rl = rl_all;
     *nnodes = rlist_nnodes (rl);
     *ncores = rlist_count (rl, "core");
     *ngpus = rlist_count (rl, "gpu");
-    rlist_destroy (rl);
+    rlist_destroy (rl_all);
+    rlist_destroy (rl_constraint);
     return 0;
 }
 
@@ -361,47 +412,100 @@ static void resource_continuation (flux_future_t *f, void *arg)
                             "all",
                             &sum->node.total,
                             &sum->core.total,
-                            &sum->gpu.total) < 0
+                            &sum->gpu.total,
+                            sum->top->queue_constraint) < 0
             || resource_count (o,
                                "allocated",
                                &sum->node.used,
                                &sum->core.used,
-                               &sum->gpu.used) < 0
+                               &sum->gpu.used,
+                               sum->top->queue_constraint) < 0
             || resource_count (o,
                                "down",
                                &sum->node.down,
                                &sum->core.down,
-                               &sum->gpu.down) < 0)
+                               &sum->gpu.down,
+                               sum->top->queue_constraint) < 0)
             fatal (0, "error decoding sched.resource-status RPC response");
     }
     flux_future_destroy (f);
     sum->f_resource = NULL;
     draw_resource (sum);
+    if (sum->top->test_exit) {
+        /* Ensure resources are refreshed before exiting */
+        wnoutrefresh (sum->win);
+        test_exit_check (sum->top);
+    }
+}
+
+static int get_queue_stats (json_t *o, const char *queue_name, json_t **qstats)
+{
+    json_t *queues = NULL;
+    json_t *q = NULL;
+    size_t index;
+    json_t *value;
+    if (json_unpack (o, "{s:o}", "queues", &queues) < 0)
+        return -1;
+    if (json_is_array (queues) == 0)
+        return -1;
+    json_array_foreach (queues, index, value) {
+        const char *name;
+        if (json_unpack (value, "{s:s}", "name", &name) < 0)
+            return -1;
+        if (streq (queue_name, name)) {
+            q = value;
+            break;
+        }
+    }
+    (*qstats) = q;
+    return 0;
 }
 
 static void stats_continuation (flux_future_t *f, void *arg)
 {
     struct summary_pane *sum = arg;
+    json_t *o = NULL;
 
-    if (flux_rpc_get_unpack (f,
-                             "{s:i s:i s:i s:{s:i s:i s:i s:i s:i s:i s:i}}",
-                             "failed", &sum->stats.failed,
-                             "canceled", &sum->stats.canceled,
-                             "timeout", &sum->stats.timeout,
-                             "job_states",
-                               "depend", &sum->stats.depend,
-                               "priority", &sum->stats.priority,
-                               "sched", &sum->stats.sched,
-                               "run", &sum->stats.run,
-                               "cleanup", &sum->stats.cleanup,
-                               "inactive", &sum->stats.inactive,
-                               "total", &sum->stats.total)) {
+    if (flux_rpc_get_unpack (f, "o", &o) < 0) {
         if (errno != ENOSYS)
-            fatal (errno, "error decoding job-list.job-stats RPC response");
+            fatal (errno, "error getting job-list.job-stats RPC response");
     }
+
+    if (sum->top->queue) {
+        json_t *qstats = NULL;
+        if (get_queue_stats (o, sum->top->queue, &qstats) < 0)
+            fatal (EPROTO, "error parsing queue stats");
+        /* stats may not yet exist if no jobs submitted to the queue */
+        if (!qstats)
+            goto out;
+        o = qstats;
+    }
+
+    if (json_unpack (o,
+                     "{s:i s:i s:i s:i s:{s:i s:i s:i s:i s:i s:i s:i}}",
+                     "successful", &sum->stats.successful,
+                     "failed", &sum->stats.failed,
+                     "canceled", &sum->stats.canceled,
+                     "timeout", &sum->stats.timeout,
+                     "job_states",
+                       "depend", &sum->stats.depend,
+                       "priority", &sum->stats.priority,
+                       "sched", &sum->stats.sched,
+                       "run", &sum->stats.run,
+                       "cleanup", &sum->stats.cleanup,
+                       "inactive", &sum->stats.inactive,
+                       "total", &sum->stats.total) < 0)
+        fatal (0, "error decoding job-list.job-stats object");
+
+out:
     flux_future_destroy (f);
     sum->f_stats = NULL;
     draw_stats (sum);
+    if (sum->top->test_exit) {
+        /* Ensure stats is refreshed before exiting */
+        wnoutrefresh (sum->win);
+        test_exit_check (sum->top);
+    }
 }
 
 static void heartblink_cb (flux_reactor_t *r,

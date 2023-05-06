@@ -85,8 +85,14 @@ static struct jobq *jobq_create (const char *name)
     if (name && !(q->name = strdup (name)))
         goto error;
     q->enable = true;
-    q->start = true;
-    q->checkpoint_start = true;
+    if (name) {
+        q->start = false;
+        q->checkpoint_start = false;
+    }
+    else {
+        q->start = true;
+        q->checkpoint_start = true;
+    }
     return q;
 error:
     jobq_destroy (q);
@@ -444,7 +450,10 @@ static int queue_configure (const flux_conf_t *conf,
             name = zlistx_next (keys);
         }
         zlistx_destroy (&keys);
-        /* add any new queues that appeared in config
+        /* add any new queues that appeared in config.  Note that
+         * named queues default to being enabled/stopped.  On initial
+         * module load, job-manager may change that state based on
+         * prior checkpointed information.
          */
         json_object_foreach (queues, name, value) {
             if (!zhashx_lookup (queue->named, name)) {
@@ -610,8 +619,6 @@ static void queue_enable_cb (flux_t *h,
         if (jobq_enable (q, enable, disable_reason) < 0)
             goto error;
     }
-    if (restart_save_state (queue->ctx) < 0)
-        flux_log_error (h, "problem saving checkpoint after queue change");
     if (flux_respond (h, msg, NULL) < 0)
         flux_log_error (h, "error responding to job-manager.queue-enable");
     return;
@@ -710,8 +717,6 @@ static void queue_start_cb (flux_t *h,
         else
             queue_stop (queue, name);
     }
-    if (restart_save_state (queue->ctx) < 0)
-        flux_log_error (h, "problem saving checkpoint after queue change");
     if (flux_respond (h, msg, NULL) < 0)
         flux_log_error (h, "error responding to job-manager.queue-start");
     return;

@@ -116,7 +116,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -159,15 +158,34 @@ am__installdirs = "$(DESTDIR)$(fluxlibdir)" "$(DESTDIR)$(libdir)" \
 	"$(DESTDIR)$(fluxincludedir)"
 LTLIBRARIES = $(fluxlib_LTLIBRARIES) $(lib_LTLIBRARIES) \
 	$(noinst_LTLIBRARIES)
+flux_libpmi_la_DEPENDENCIES = libflux-taskmap.la libflux-idset.la \
+	$(builddir)/libpmi/libpmi_client.la \
+	$(builddir)/libpmi/libpmi_common.la $(builddir)/libutil/aux.lo
+am_flux_libpmi_la_OBJECTS =
+flux_libpmi_la_OBJECTS = $(am_flux_libpmi_la_OBJECTS)
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
+flux_libpmi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(flux_libpmi_la_LDFLAGS) $(LDFLAGS) -o \
+	$@
+am__dirstamp = $(am__leading_dot)dirstamp
+flux_libpmi2_la_DEPENDENCIES = libflux-taskmap.la libflux-idset.la \
+	$(builddir)/libpmi/libpmi_client.la \
+	$(builddir)/libpmi/libpmi_common.la $(builddir)/libutil/aux.lo
+am_flux_libpmi2_la_OBJECTS =
+flux_libpmi2_la_OBJECTS = $(am_flux_libpmi2_la_OBJECTS)
+flux_libpmi2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(flux_libpmi2_la_LDFLAGS) $(LDFLAGS) \
+	-o $@
 libflux_core_la_DEPENDENCIES = $(builddir)/libflux/libflux.la \
 	$(builddir)/libkvs/libkvs.la $(builddir)/libjob/libjob.la \
 	$(builddir)/libsubprocess/libsubprocess.la libflux-internal.la
 am_libflux_core_la_OBJECTS =
 libflux_core_la_OBJECTS = $(am_libflux_core_la_OBJECTS)
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
 libflux_core_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libflux_core_la_LDFLAGS) $(LDFLAGS) \
@@ -245,20 +263,6 @@ libflux_taskmap_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libflux_taskmap_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-libpmi_la_DEPENDENCIES = libflux-taskmap.la libflux-idset.la \
-	$(builddir)/libpmi/libpmi_client.la $(builddir)/libutil/aux.lo
-am_libpmi_la_OBJECTS =
-libpmi_la_OBJECTS = $(am_libpmi_la_OBJECTS)
-libpmi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libpmi_la_LDFLAGS) $(LDFLAGS) -o $@
-libpmi2_la_DEPENDENCIES = libflux-taskmap.la libflux-idset.la \
-	$(builddir)/libpmi/libpmi_client.la $(builddir)/libutil/aux.lo
-am_libpmi2_la_OBJECTS =
-libpmi2_la_OBJECTS = $(am_libpmi2_la_OBJECTS)
-libpmi2_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libpmi2_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -290,16 +294,16 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libflux_core_la_SOURCES) $(libflux_hostlist_la_SOURCES) \
+SOURCES = $(flux_libpmi_la_SOURCES) $(flux_libpmi2_la_SOURCES) \
+	$(libflux_core_la_SOURCES) $(libflux_hostlist_la_SOURCES) \
 	$(libflux_idset_la_SOURCES) $(libflux_internal_la_SOURCES) \
 	$(libflux_optparse_la_SOURCES) $(libflux_schedutil_la_SOURCES) \
-	$(libflux_taskmap_la_SOURCES) $(libpmi_la_SOURCES) \
-	$(libpmi2_la_SOURCES)
-DIST_SOURCES = $(libflux_core_la_SOURCES) \
-	$(libflux_hostlist_la_SOURCES) $(libflux_idset_la_SOURCES) \
-	$(libflux_internal_la_SOURCES) $(libflux_optparse_la_SOURCES) \
-	$(libflux_schedutil_la_SOURCES) $(libflux_taskmap_la_SOURCES) \
-	$(libpmi_la_SOURCES) $(libpmi2_la_SOURCES)
+	$(libflux_taskmap_la_SOURCES)
+DIST_SOURCES = $(flux_libpmi_la_SOURCES) $(flux_libpmi2_la_SOURCES) \
+	$(libflux_core_la_SOURCES) $(libflux_hostlist_la_SOURCES) \
+	$(libflux_idset_la_SOURCES) $(libflux_internal_la_SOURCES) \
+	$(libflux_optparse_la_SOURCES) $(libflux_schedutil_la_SOURCES) \
+	$(libflux_taskmap_la_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -485,8 +489,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -663,7 +665,24 @@ lib_LTLIBRARIES = libflux-core.la \
 	libflux-hostlist.la \
 	libflux-taskmap.la
 
-fluxlib_LTLIBRARIES = libpmi.la libpmi2.la
+fluxlib_LTLIBRARIES = \
+	flux/libpmi.la \
+	flux/libpmi2.la
+
+
+#  With make -j, libpmi*.so will be installed in parallel with dependencies
+#  (libflux-taskmap.so and libflux-idset.so), so one or both .la files may
+#  not be created by the time they are needed for the libpmi*.so relink,
+#  resulting in an error like
+#
+#    /usr/bin/ld: cannot find -lflux-taskmap
+#
+#  This workaround forces the install of fluxlib_LTLIBRARIES after all
+#  lib_LTLIBRARIES.
+#
+#  ref: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7328
+#
+install_fluxlibLTLIBRARIES = install-fluxlibLTLIBRARIES
 libflux_core_la_SOURCES = 
 libflux_core_la_LIBADD = \
 	$(builddir)/libflux/libflux.la \
@@ -744,28 +763,30 @@ libflux_taskmap_la_LDFLAGS = \
 	-shared -export-dynamic --disable-static \
 	$(san_ld_zdef_flag)
 
-libpmi_la_SOURCES = 
-libpmi_la_LIBADD = \
+flux_libpmi_la_SOURCES = 
+flux_libpmi_la_LIBADD = \
 	libflux-taskmap.la \
 	libflux-idset.la \
 	$(builddir)/libpmi/libpmi_client.la \
+	$(builddir)/libpmi/libpmi_common.la \
 	$(builddir)/libutil/aux.lo
 
-libpmi_la_LDFLAGS = \
+flux_libpmi_la_LDFLAGS = \
 	-Wl,--version-script=$(srcdir)/libpmi.map \
 	-version-info 0:0:0 \
 	-Wl,--defsym=flux_pmi_library=1 \
 	-shared -export-dynamic --disable-static \
 	$(san_ld_zdef_flag)
 
-libpmi2_la_SOURCES = 
-libpmi2_la_LIBADD = \
+flux_libpmi2_la_SOURCES = 
+flux_libpmi2_la_LIBADD = \
 	libflux-taskmap.la \
 	libflux-idset.la \
 	$(builddir)/libpmi/libpmi_client.la \
+	$(builddir)/libpmi/libpmi_common.la \
 	$(builddir)/libutil/aux.lo
 
-libpmi2_la_LDFLAGS = \
+flux_libpmi2_la_LDFLAGS = \
 	-Wl,--version-script=$(srcdir)/libpmi2.map \
 	-version-info 0:0:0 \
 	-Wl,--defsym=flux_pmi_library=1 \
@@ -814,6 +835,21 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+
+install-fluxlibLTLIBRARIES: $(fluxlib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@list='$(fluxlib_LTLIBRARIES)'; test -n "$(fluxlibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(fluxlibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(fluxlibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(fluxlibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(fluxlibdir)"; \
+	}
 
 uninstall-fluxlibLTLIBRARIES:
 	@$(NORMAL_UNINSTALL)
@@ -880,6 +916,15 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+flux/$(am__dirstamp):
+	@$(MKDIR_P) flux
+	@: > flux/$(am__dirstamp)
+
+flux/libpmi.la: $(flux_libpmi_la_OBJECTS) $(flux_libpmi_la_DEPENDENCIES) $(EXTRA_flux_libpmi_la_DEPENDENCIES) flux/$(am__dirstamp)
+	$(AM_V_CCLD)$(flux_libpmi_la_LINK) -rpath $(fluxlibdir) $(flux_libpmi_la_OBJECTS) $(flux_libpmi_la_LIBADD) $(LIBS)
+
+flux/libpmi2.la: $(flux_libpmi2_la_OBJECTS) $(flux_libpmi2_la_DEPENDENCIES) $(EXTRA_flux_libpmi2_la_DEPENDENCIES) flux/$(am__dirstamp)
+	$(AM_V_CCLD)$(flux_libpmi2_la_LINK) -rpath $(fluxlibdir) $(flux_libpmi2_la_OBJECTS) $(flux_libpmi2_la_LIBADD) $(LIBS)
 
 libflux-core.la: $(libflux_core_la_OBJECTS) $(libflux_core_la_DEPENDENCIES) $(EXTRA_libflux_core_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libflux_core_la_LINK) -rpath $(libdir) $(libflux_core_la_OBJECTS) $(libflux_core_la_LIBADD) $(LIBS)
@@ -902,12 +947,6 @@ libflux-schedutil.la: $(libflux_schedutil_la_OBJECTS) $(libflux_schedutil_la_DEP
 libflux-taskmap.la: $(libflux_taskmap_la_OBJECTS) $(libflux_taskmap_la_DEPENDENCIES) $(EXTRA_libflux_taskmap_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libflux_taskmap_la_LINK) -rpath $(libdir) $(libflux_taskmap_la_OBJECTS) $(libflux_taskmap_la_LIBADD) $(LIBS)
 
-libpmi.la: $(libpmi_la_OBJECTS) $(libpmi_la_DEPENDENCIES) $(EXTRA_libpmi_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpmi_la_LINK) -rpath $(fluxlibdir) $(libpmi_la_OBJECTS) $(libpmi_la_LIBADD) $(LIBS)
-
-libpmi2.la: $(libpmi2_la_OBJECTS) $(libpmi2_la_DEPENDENCIES) $(EXTRA_libpmi2_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpmi2_la_LINK) -rpath $(fluxlibdir) $(libpmi2_la_OBJECTS) $(libpmi2_la_LIBADD) $(LIBS)
-
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -919,6 +958,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf flux/.libs flux/_libs
 install-fluxincludeHEADERS: $(fluxinclude_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(fluxinclude_HEADERS)'; test -n "$(fluxincludedir)" || list=; \
@@ -1129,6 +1169,7 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f flux/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -1226,20 +1267,7 @@ uninstall-am: uninstall-fluxincludeHEADERS \
 
 .PRECIOUS: Makefile
 
-
-#  With make -j, libpmi*.so will be installed in parallel with dependencies
-#  (libflux-taskmap.so and libflux-idset.so), so one or both .la files may
-#  not be created by the time they are needed for the libpmi*.so relink,
-#  resulting in an error like
-#
-#    /usr/bin/ld: cannot find -lflux-taskmap
-#
-#  This workaround forces the install of fluxlib_LTLIBRARIES after all
-#  lib_LTLIBRARIES.
-#
-#  ref: https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7328
-#
-install-fluxlibLTLIBRARIES: $(install-libLTLIBRARIES)
+$(install_fluxlibLTLIBRARIES): install-libLTLIBRARIES
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

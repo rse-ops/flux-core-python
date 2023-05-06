@@ -67,6 +67,13 @@ test_expect_success 'drain detects subset of already drained targets' '
 	test $(flux resource status -s drain -no {nnodes}) -eq 1
 '
 
+test_expect_success 'drain suggests --force with existing reason' '
+	test_must_fail flux resource drain 1 test_reason_updated \
+		>update-failed.log 2>&1 &&
+	test_debug "cat update-failed.log" &&
+	grep -i 'use --force' update-failed.log
+'
+
 test_expect_success 'drain reason can be updated with --force' '
 	flux resource drain --force 1 test_reason_updated &&
 	flux resource drain | grep test_reason_updated
@@ -195,26 +202,26 @@ test_expect_success 'resource.undrain RPC fails on rank > 0' '
 
 test_expect_success 'drain works on allocated rank' '
 	flux resource undrain $(flux resource status -s drain -no {ranks}) &&
-	id=$(flux mini submit --wait-event=start sleep 300) &&
+	id=$(flux submit --wait-event=start sleep 300) &&
 	rank=$(flux jobs -no {ranks} $id) &&
 	flux resource drain $rank &&
 	test $(flux resource list -n -s down -o {nnodes}) -eq 1 &&
 	flux resource drain | grep draining &&
-	flux job cancel $id &&
+	flux cancel $id &&
 	flux job wait-event $id clean &&
 	flux resource drain | grep drained
 '
 
 test_expect_success 'flux resource drain differentiates drain/draining' '
 	flux resource undrain $(flux resource status -s drain -no {ranks}) &&
-	id=$(flux mini submit --wait-event=start sleep 300) &&
+	id=$(flux submit --wait-event=start sleep 300) &&
 	rank=$(flux jobs -no {ranks} $id) &&
 	flux resource drain $(hostname) &&
 	test_debug "flux resource drain" &&
 	test_debug "flux resource status" &&
 	test $(flux resource status -s draining -no {ranks}) = "$rank" &&
 	flux resource drain | grep draining &&
-	flux job cancel $id &&
+	flux cancel $id &&
 	flux job wait-event $id clean &&
 	test $(flux resource status -s drain -no {nnodes}) -eq ${SIZE}
 '

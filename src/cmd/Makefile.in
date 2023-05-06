@@ -94,8 +94,8 @@ bin_PROGRAMS = flux$(EXEEXT)
 fluxcmd_PROGRAMS = flux-terminus$(EXEEXT) flux-ping$(EXEEXT) \
 	flux-keygen$(EXEEXT) flux-logger$(EXEEXT) flux-event$(EXEEXT) \
 	flux-module$(EXEEXT) flux-kvs$(EXEEXT) flux-start$(EXEEXT) \
-	flux-job$(EXEEXT) flux-queue$(EXEEXT) flux-exec$(EXEEXT) \
-	flux-R$(EXEEXT) flux-top$(EXEEXT)
+	flux-job$(EXEEXT) flux-exec$(EXEEXT) flux-R$(EXEEXT) \
+	flux-top$(EXEEXT)
 subdir = src/cmd
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
@@ -121,7 +121,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -154,7 +153,9 @@ flux_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(top_builddir)/src/common/libkvs/libkvs.la \
 	$(top_builddir)/src/common/librlist/librlist.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
@@ -212,14 +213,11 @@ flux_ping_SOURCES = flux-ping.c
 flux_ping_OBJECTS = flux-ping.$(OBJEXT)
 flux_ping_LDADD = $(LDADD)
 flux_ping_DEPENDENCIES = $(am__DEPENDENCIES_2)
-flux_queue_SOURCES = flux-queue.c
-flux_queue_OBJECTS = flux-queue.$(OBJEXT)
-flux_queue_LDADD = $(LDADD)
-flux_queue_DEPENDENCIES = $(am__DEPENDENCIES_2)
 flux_start_SOURCES = flux-start.c
 flux_start_OBJECTS = flux-start.$(OBJEXT)
 flux_start_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libczmqcontainers/libczmqcontainers.la
 flux_terminus_SOURCES = flux-terminus.c
 flux_terminus_OBJECTS = flux-terminus.$(OBJEXT)
@@ -299,12 +297,12 @@ am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(flux_SOURCES) $(nodist_flux_SOURCES) flux-R.c flux-event.c \
 	flux-exec.c flux-job.c flux-keygen.c flux-kvs.c flux-logger.c \
-	flux-module.c flux-ping.c flux-queue.c flux-start.c \
-	flux-terminus.c $(flux_top_SOURCES)
+	flux-module.c flux-ping.c flux-start.c flux-terminus.c \
+	$(flux_top_SOURCES)
 DIST_SOURCES = $(flux_SOURCES) flux-R.c flux-event.c flux-exec.c \
 	flux-job.c flux-keygen.c flux-kvs.c flux-logger.c \
-	flux-module.c flux-ping.c flux-queue.c flux-start.c \
-	flux-terminus.c $(flux_top_SOURCES)
+	flux-module.c flux-ping.c flux-start.c flux-terminus.c \
+	$(flux_top_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -443,8 +441,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -600,7 +596,9 @@ AM_CPPFLAGS = \
 fluxcmd_ldadd = \
 	$(top_builddir)/src/common/libkvs/libkvs.la \
 	$(top_builddir)/src/common/librlist/librlist.la \
+	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libflux-optparse.la \
@@ -609,17 +607,20 @@ fluxcmd_ldadd = \
 	$(LIBPTHREAD) \
 	$(HWLOC_LIBS) \
 	$(JANSSON_LIBS) \
-	$(LIBARCHIVE_LIBS)
+	$(LIBARCHIVE_LIBS) \
+	$(PMIX_LIBS)
 
 LDADD = $(fluxcmd_ldadd)
 EXTRA_DIST = \
 	builtin-cmds-list.sh
 
 CLEANFILES = \
-	builtin-cmds.c
+	builtin-cmds.c \
+	flux-pkill.py
 
 BUILT_SOURCES = \
-	builtin-cmds.c
+	builtin-cmds.c \
+	flux-pkill.py
 
 flux_SOURCES = \
 	flux.c \
@@ -656,7 +657,13 @@ nodist_flux_SOURCES = \
 dist_fluxcmd_SCRIPTS = \
 	flux-cron \
 	flux-mini.py \
+	flux-alloc.py \
+	flux-batch.py \
+	flux-run.py \
+	flux-submit.py \
+	flux-bulksubmit.py \
 	flux-jobs.py \
+	flux-fortune.py \
 	flux-resource.py \
 	flux-admin.py \
 	flux-jobtap.py \
@@ -665,11 +672,15 @@ dist_fluxcmd_SCRIPTS = \
 	flux-job-exec-override.py \
 	flux-perilog-run.py \
 	flux-uri.py \
-	flux-pstree.py
+	flux-pstree.py \
+	flux-pgrep.py \
+	flux-queue.py \
+	flux-cancel.py
 
 flux_start_LDADD = \
 	$(fluxcmd_ldadd) \
 	$(top_builddir)/src/common/libpmi/libpmi_server.la \
+	$(top_builddir)/src/common/libpmi/libpmi_common.la \
 	$(top_builddir)/src/common/libczmqcontainers/libczmqcontainers.la
 
 flux_job_LDADD = \
@@ -938,10 +949,6 @@ flux-ping$(EXEEXT): $(flux_ping_OBJECTS) $(flux_ping_DEPENDENCIES) $(EXTRA_flux_
 	@rm -f flux-ping$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(flux_ping_OBJECTS) $(flux_ping_LDADD) $(LIBS)
 
-flux-queue$(EXEEXT): $(flux_queue_OBJECTS) $(flux_queue_DEPENDENCIES) $(EXTRA_flux_queue_DEPENDENCIES) 
-	@rm -f flux-queue$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(flux_queue_OBJECTS) $(flux_queue_LDADD) $(LIBS)
-
 flux-start$(EXEEXT): $(flux_start_OBJECTS) $(flux_start_DEPENDENCIES) $(EXTRA_flux_start_DEPENDENCIES) 
 	@rm -f flux-start$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(flux_start_OBJECTS) $(flux_start_LDADD) $(LIBS)
@@ -1023,7 +1030,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-logger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-module.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-ping.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-queue.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-start.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux-terminus.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flux.Po@am__quote@
@@ -1324,7 +1330,8 @@ install-dvi: install-dvi-am
 install-dvi-am:
 
 install-exec-am: install-binPROGRAMS
-
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
 
 install-html-am:
@@ -1364,9 +1371,9 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-dist_fluxcmdSCRIPTS \
-	uninstall-fluxcmdPROGRAMS
+	uninstall-fluxcmdPROGRAMS uninstall-local
 
-.MAKE: all check install install-am install-strip
+.MAKE: all check install install-am install-exec-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-fluxcmdPROGRAMS clean-generic \
@@ -1375,7 +1382,7 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_fluxcmdSCRIPTS \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
 	install-data-am install-dist_fluxcmdSCRIPTS install-dvi \
-	install-dvi-am install-exec install-exec-am \
+	install-dvi-am install-exec install-exec-am install-exec-hook \
 	install-fluxcmdPROGRAMS install-html install-html-am \
 	install-info install-info-am install-man install-pdf \
 	install-pdf-am install-ps install-ps-am install-strip \
@@ -1383,10 +1390,24 @@ uninstall-am: uninstall-binPROGRAMS uninstall-dist_fluxcmdSCRIPTS \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-dist_fluxcmdSCRIPTS uninstall-fluxcmdPROGRAMS
+	uninstall-dist_fluxcmdSCRIPTS uninstall-fluxcmdPROGRAMS \
+	uninstall-local
 
 .PRECIOUS: Makefile
 
+
+flux-pkill.py:
+	$(AM_V_GEN)$(LN_S) $(srcdir)/flux-pgrep.py flux-pkill.py
+
+install-exec-hook:
+	$(AM_V_at)echo Linking flux-pkill to flux-pgrep && \
+	 (cd $(DESTDIR)$(fluxcmddir) && \
+	  rm -f flux-pkill.py && \
+	  $(LN_S) flux-pgrep.py flux-pkill.py)
+
+uninstall-local:
+	$(AM_V_at)echo Removing $(fluxcmddir)/flux-pkill.py && \
+	  rm -f $(fluxcmddir)/flux-pkill.py
 
 #
 # Automatically build list of flux(1) builtins from

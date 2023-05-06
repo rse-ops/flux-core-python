@@ -17,7 +17,7 @@ test_expect_success 'exec hello: remove job-exec module' '
 test_expect_success NO_CHAIN_LINT 'exec hello: start exec server-in-a-script' '
 	${execservice} test-exec > server1.log &
 	SERVER1=$! &&
-	id=$(flux mini submit --flags=debug hostname) &&
+	id=$(flux submit --flags=debug hostname) &&
 	flux job wait-event ${id} clean &&
 	test_debug "cat server1.log" &&
 	grep "start: $(flux job id ${id})" server1.log
@@ -26,7 +26,7 @@ test_expect_success NO_CHAIN_LINT 'exec hello: takeover: start new service' '
 	${execservice} test-exec2 > server2.log &
 	SERVER2=$! &&
 	flux kvs get -c 1 --watch --waitcreate test.exec-hello.test-exec2 &&
-	id=$(flux mini submit --flags=debug hostname) &&
+	id=$(flux submit --flags=debug hostname) &&
 	flux job wait-event ${id} clean &&
 	grep "start: $(flux job id ${id})" server2.log
 '
@@ -38,7 +38,7 @@ test_expect_success NO_CHAIN_LINT 'exec hello: teardown existing servers' "
 	test_must_fail grep test-exec module.list
 "
 test_expect_success NO_CHAIN_LINT 'exec hello: job start events are paused' '
-	id=$(flux mini submit --flags=debug hostname) &&
+	id=$(flux submit --flags=debug hostname) &&
 	flux job wait-event -vt 5 ${id} alloc &&
 	test_debug "flux job eventlog ${id}" &&
 	test $(lastevent ${id}) = "debug.start-lost"
@@ -57,7 +57,7 @@ test_expect_success NO_CHAIN_LINT 'exec hello: hello now returns error due to ru
 	test_expect_code 1 run_timeout 5 ${execservice} testexecfoo
 '
 test_expect_success NO_CHAIN_LINT 'exec hello: terminate all jobs and servers' '
-	flux job cancel ${id} &&
+	flux cancel ${id} &&
 	test_debug "cat server3.log" &&
 	flux job wait-event -t 2.5 ${id} clean &&
 	kill ${SERVER3}

@@ -108,6 +108,7 @@ _flux_complete_format_name() {
 #  Get the list of subcommands from FLUX_EXEC_PATH and hard-coded builtins
 __get_flux_subcommands() {
     local subcommands
+    local deprecated="mini.py"
     if [ -z "$FLUX_EXEC_PATH" ]; then
         FLUX_EXEC_PATH=`flux env printenv FLUX_EXEC_PATH`
     fi
@@ -115,9 +116,11 @@ __get_flux_subcommands() {
     local IFS=":"
     for dir in $FLUX_EXEC_PATH; do
         for op in $dir/flux-*; do
-            if [[ -x $op ]]; then
+            if [[ -x $op  ]]; then
                 op="${op##*flux-}"
-                subcommands+="${op%.*} "
+                if ! _flux_contains_word ${op} $deprecated; then
+                    subcommands+="${op%.*} "
+                fi
             fi
         done
     done
@@ -127,6 +130,33 @@ __get_flux_subcommands() {
     done
 
     echo "$subcommands"
+}
+
+#  flux-cancel(1) completions
+_flux_cancel()
+{
+    local cmd=$1
+    OPTS="\
+        --all \
+        -n --dry-run \
+        -q --quiet \
+        -u --user= \
+        -S --states= \
+        -m --message= \
+    "
+    if [[ $cur != -* ]]; then
+        #  Attempt to substitute an active jobid
+        compopt +o filenames
+        active_jobs=$(flux jobs -no {id})
+        COMPREPLY=( $(compgen -W "${active_jobs}" -- "$cur") )
+        return 0
+    fi
+    COMPREPLY=( $(compgen -W "${OPTS} -h --help" -- "$cur") )
+    if [[ "${COMPREPLY[@]}" == *= ]]; then
+        # Add space if there is not a '=' in suggestions
+        compopt -o nospace
+    fi
+    return 0
 }
 
 #  flux-mini(1) completions
@@ -152,6 +182,7 @@ _flux_mini()
         --input= \
         --output= \
         --error= \
+        -u --unbuffered \
         -l --label-io \
         --flags= \
         --dry-run \
@@ -338,6 +369,8 @@ _flux_job()
         wait \
         memo \
         taskmap \
+        timeleft \
+        last \
     "
     local nojob_subcmds="\
         cancelall \
@@ -388,6 +421,8 @@ _flux_job()
         -v --verbose \
         -q --quiet \
         -r --read-only \
+        -i --stdin-ranks= \
+        -u --unbuffered \
         --debug \
     "
     local status_OPTS="\
@@ -440,6 +475,10 @@ _flux_job()
         -f --force \
         --batch= \
     "
+    local timeleft_OPTS="\
+        -H --human
+    "
+    local last_OPTS=""
     if [[ $cmd != "job" ]]; then
         if [[ $cur != -* ]]; then
            if _flux_contains_word ${cmd} ${subcmds}; then
@@ -877,7 +916,7 @@ _flux_jobs()
         -c --count=N \
         -f --filter= \
         --since=WHEN \
-        -n --suppress-header \
+        -n --no-header \
         -u --user= \
         --name= \
         --queue= \
@@ -894,6 +933,59 @@ _flux_jobs()
         return 0
     fi
     if _flux_complete_format_name flux jobs; then
+        return 0
+    fi
+    COMPREPLY=( $(compgen -W "${OPTS} -h --help" -- "$cur") )
+    if [[ "${COMPREPLY[@]}" == *= ]]; then
+        # Add space if there is not a '=' in suggestions
+        compopt -o nospace
+    fi
+    return 0
+}
+
+# flux-pgrep(1) completions
+_flux_pgrep()
+{
+    local cmd=$1
+    local OPTS="\
+        -a \
+        -A \
+        -c --count= \
+        --max-entries= \
+        -f --filter= \
+        -n --no-header \
+        -u --user= \
+        --queue= \
+        -o --format= \
+    "
+    if _flux_complete_queue; then
+        return 0
+    fi
+    # flux-pgrep uses flux-jobs config
+    if _flux_complete_format_name flux jobs; then
+        return 0
+    fi
+    COMPREPLY=( $(compgen -W "${OPTS} -h --help" -- "$cur") )
+    if [[ "${COMPREPLY[@]}" == *= ]]; then
+        # Add space if there is not a '=' in suggestions
+        compopt -o nospace
+    fi
+    return 0
+}
+
+# flux-pkill(1) completions
+_flux_pkill()
+{
+    local cmd=$1
+    local OPTS="\
+        -A \
+        -c --count= \
+        --max-entries= \
+        -f --filter= \
+        -u --user= \
+        --queue= \
+    "
+    if _flux_complete_queue; then
         return 0
     fi
     COMPREPLY=( $(compgen -W "${OPTS} -h --help" -- "$cur") )
@@ -1173,9 +1265,6 @@ _flux_attr()
     local lsattr_OPTS="\
         -v --values \
     "
-    local setattr_OPTS="\
-        -e --expunge \
-    "
     if [[ $cmd != "flux" ]]; then
         if [[ $cur != -* && $cmd == "getattr" ]]; then
             COMPREPLY=( $(compgen -W "$(flux lsattr)" -- "$cur") )
@@ -1245,8 +1334,11 @@ _flux_core()
     fi
 
     case "${cmd}" in
-    mini)
-        _flux_mini $subcmd
+    submit|run|alloc|batch|bulksubmit)
+        _flux_mini $cmd
+        ;;
+    cancel)
+        _flux_cancel $subcmd
         ;;
     resource)
         _flux_resource $subcmd
@@ -1277,6 +1369,12 @@ _flux_core()
         ;;
     jobs)
         _flux_jobs $subcmd
+        ;;
+    pgrep)
+        _flux_pgrep $subcmd
+        ;;
+    pkill)
+        _flux_pkill $subcmd
         ;;
     pstree)
         _flux_pstree $subcmd

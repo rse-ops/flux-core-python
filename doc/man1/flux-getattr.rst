@@ -1,6 +1,3 @@
-.. flux-help-command: {get,set,ls}attr
-.. flux-help-description: Access, modify, and list broker attributes
-
 ===============
 flux-getattr(1)
 ===============
@@ -13,7 +10,7 @@ SYNOPSIS
 
 **flux** **setattr** *name* *value*
 
-**flux** **setattr** [*--expunge*] *name*
+**flux** **setattr** *name*
 
 **flux** **lsattr** [*--values*]
 

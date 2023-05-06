@@ -15,7 +15,7 @@ flux setattr log-stderr-level 1
 
 # N.B. resources = 1 rank, 1 core/rank
 test_expect_success 'job-manager: submit 5 jobs (job 2 held)' '
-        flux mini bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
+        flux bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: default hold default default default
 '
 
@@ -40,7 +40,7 @@ test_expect_success 'job-manager: job 4 hold' '
 '
 
 test_expect_success 'job-manager: cancel job 1' '
-        flux job cancel $(cat job1.id)
+        flux cancel $(cat job1.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state ISRSS (job 3 run, job 2 held)' '
@@ -59,6 +59,13 @@ test_expect_success HAVE_JQ 'job-manager: annotations job 5 pending (job 2/4 hel
         jmgr_check_annotation $(cat job5.id) "sched.reason_pending" "\"insufficient resources\""
 '
 
+test_expect_success HAVE_JQ 'job-manager: job 2, 4 hold again (issue #4940)' '
+        flux job urgency $(cat job2.id) hold &&
+        flux job urgency $(cat job4.id) hold &&
+        jmgr_check_state $(cat job2.id) S &&
+        jmgr_check_state $(cat job4.id) S
+'
+
 test_expect_success 'job-manager: job 4 release (higher urgency)' '
         flux job urgency $(cat job4.id) 20
 '
@@ -72,7 +79,7 @@ test_expect_success HAVE_JQ 'job-manager: annotations job 4 pending' '
 '
 
 test_expect_success 'job-manager: cancel job 3' '
-        flux job cancel $(cat job3.id)
+        flux cancel $(cat job3.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state ISIRS (job 4 run, job 2 held)' '
@@ -92,7 +99,7 @@ test_expect_success HAVE_JQ 'job-manager: annotations job 5 pending (job 2 held)
 '
 
 test_expect_success 'job-manager: cancel job 4' '
-        flux job cancel $(cat job4.id)
+        flux cancel $(cat job4.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state ISIIR (job 5 run, job 2 held)' '
@@ -124,8 +131,8 @@ test_expect_success HAVE_JQ 'job-manager: annotations job 2 pending' '
 '
 
 test_expect_success 'job-manager: cancel remaining jobs' '
-        flux job cancel $(cat job2.id) &&
-        flux job cancel $(cat job5.id)
+        flux cancel $(cat job2.id) &&
+        flux cancel $(cat job5.id)
 '
 
 test_done

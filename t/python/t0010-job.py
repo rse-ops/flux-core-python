@@ -19,6 +19,7 @@ import datetime
 import signal
 import locale
 import pathlib
+import subprocess
 from glob import glob
 
 import yaml
@@ -44,8 +45,12 @@ def yaml_to_json(s):
 class TestJob(unittest.TestCase):
     @classmethod
     def setUpClass(self):
+        os.unsetenv("FLUX_F58_FORCE_ASCII")
         self.fh = flux.Flux()
-        self.use_ascii = locale.getlocale()[1] != "UTF-8"
+        self.use_ascii = False
+        build_opts = subprocess.check_output(["flux", "version"]).decode()
+        if  locale.getlocale()[1] != "UTF-8" or "ascii-only" in build_opts:
+            self.use_ascii = True
 
         self.jobspec_dir = os.path.abspath(
             os.path.join(os.environ["FLUX_SOURCE_DIR"], "t", "jobspec")
@@ -706,6 +711,19 @@ class TestJob(unittest.TestCase):
         # Test a job that does not exist
         meta = job.get_job(self.fh, 123456)
         self.assertIsNone(meta)
+
+    def test_34_timeleft(self):
+        spec = JobspecV1.from_command(
+            ["python3", "-c", "import flux; print(flux.job.timeleft())"]
+        )
+        spec.duration = "1m"
+        jobid = job.submit(self.fh, spec, waitable=True)
+        job.wait(self.fh, jobid=jobid)
+        try:
+            dt = job.timeleft()
+            dt = job.timeleft(self.fh)
+        except OSError:
+            pass
         
 if __name__ == "__main__":
     from subflux import rerun_under_flux

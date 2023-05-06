@@ -300,7 +300,7 @@ int boot_config_attr (attr_t *attrs, json_t *hosts)
             || attr_add (attrs,
                          "hostlist",
                          hostname,
-                         FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                         ATTR_IMMUTABLE) < 0) {
             log_err ("failed to set hostlist attribute to localhost");
             goto error;
         }
@@ -327,7 +327,7 @@ int boot_config_attr (attr_t *attrs, json_t *hosts)
     if (attr_add (attrs,
                   "hostlist",
                   s,
-                  FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                  ATTR_IMMUTABLE) < 0) {
         log_err ("failed to set hostlist attribute to config derived value");
         goto error;
     }
@@ -351,7 +351,7 @@ int boot_config_attr (attr_t *attrs, json_t *hosts)
         }
         val = s;
     }
-    if (attr_add (attrs, "broker.mapping", val, FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+    if (attr_add (attrs, "broker.mapping", val, ATTR_IMMUTABLE) < 0) {
         log_err ("setattr broker.mapping");
         goto error;
     }
@@ -481,6 +481,19 @@ int boot_config_geturibyrank (json_t *hosts,
     return 0;
 }
 
+static int set_broker_boot_method_attr (attr_t *attrs, const char *value)
+{
+    (void)attr_delete (attrs, "broker.boot-method", true);
+    if (attr_add (attrs,
+                  "broker.boot-method",
+                  value,
+                  ATTR_IMMUTABLE) < 0) {
+        log_err ("setattr broker.boot-method");
+        return -1;
+    }
+    return 0;
+}
+
 int boot_config (flux_t *h, struct overlay *overlay, attr_t *attrs)
 {
     struct boot_conf conf;
@@ -584,7 +597,7 @@ int boot_config (flux_t *h, struct overlay *overlay, attr_t *attrs)
         if (attr_add (attrs,
                       "tbon.endpoint",
                       my_uri,
-                      FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                      ATTR_IMMUTABLE) < 0) {
             log_err ("setattr tbon.endpoint %s", my_uri);
             goto error;
         }
@@ -593,7 +606,7 @@ int boot_config (flux_t *h, struct overlay *overlay, attr_t *attrs)
         if (attr_add (attrs,
                       "tbon.endpoint",
                       NULL,
-                      FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                      ATTR_IMMUTABLE) < 0) {
             log_err ("setattr tbon.endpoint NULL");
             goto error;
         }
@@ -625,10 +638,12 @@ int boot_config (flux_t *h, struct overlay *overlay, attr_t *attrs)
     if (attr_add (attrs,
                   "instance-level",
                   "0",
-                  FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                  ATTR_IMMUTABLE) < 0) {
         log_err ("setattr instance-level 0");
         goto error;
     }
+    if (set_broker_boot_method_attr (attrs, "config") < 0)
+        goto error;
     json_decref (hosts);
     topology_decref (topo);
     return 0;

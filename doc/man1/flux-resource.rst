@@ -1,4 +1,5 @@
 .. flux-help-include: true
+.. flux-help-section: instance
 
 ================
 flux-resource(1)
@@ -37,6 +38,7 @@ A few notes on drained nodes:
 - In ``flux resource status`` and ``flux resource drain``, the drain state
   of a node will be presented as "drained" if the node has no job allocations,
   and "draining" if there are still jobs running on the node.
+- If a node is drained and offline, then "drained*" will be displayed.
 
 Some further background on resource service operation may be found in the
 RESOURCE INVENTORY section below.
@@ -61,15 +63,15 @@ COMMANDS
    by ``flux resource info`` is "all".
 
 **status**  [-n] [-o FORMAT] [-s STATE,...] [--skip-empty]
-   Show system view of resources.  The *-n,--no-header* suppresses header
-   from output, *-o,--format=FORMAT* customizes output formatting (see
-   below), and *-s,--states=STATE,...* limits output to specified resource
-   states, where valid states are "online", "offline", "avail", "exclude",
-   "draining", "drained", and "all". The special "drain" state is also
-   supported, and selects both draining and drained resources. Normally,
-   ``flux resource status`` skips lines with no resources, unless the
-   ``-s, --states`` option is used. Suppression of empty lines can always
-   be forced with the ``--skip-empty`` option.
+   Show system view of resources.  The *-n,--no-header* suppresses
+   header from output, *-o,--format=FORMAT* customizes output formatting
+   (see below), and *-s,--states=STATE,...* limits output to specified
+   resource states, where valid states are "online", "offline", "avail",
+   "exclude", "draining", "drained", "drained*", and "all". The special
+   "drain" state is also supported, and selects both draining and drained
+   resources. Normally, ``flux resource status`` skips lines with no
+   resources, unless the ``-s, --states`` option is used. Suppression of
+   empty lines can always be forced with the ``--skip-empty`` option.
 
 **drain** [-n] [-o FORMAT] [-f] [-u] [targets] [reason ...]
    If specified without arguments, list drained nodes. In this mode,
@@ -103,9 +105,80 @@ OUTPUT FORMAT
 =============
 
 The *--format* option can be used to specify an output format using Python's
-string format syntax or a defined format by name. For a list of built-in
-and configured formats use ``-o help``. See :man1:`flux-jobs` *OUTPUT FORMAT*
-section for a detailed description of this syntax.
+string format syntax or a defined format by name. For a list of built-in and
+configured formats use ``-o help``.  A configuration snippet for an existing
+named format may be generated with ``--format=get-config=NAME``.  See
+:man1:`flux-jobs` *OUTPUT FORMAT* section for a detailed description of this
+syntax.
+
+Resources are combined into a single line of output when possible depending on
+the supplied output format.  Resource counts are not included in the
+determination of uniqueness.  Therefore, certain output formats will alter the
+number of lines of output.  For example:
+
+::
+
+   $ flux resource list -no {nnodes}
+
+Would simply output a single of output containing the total number of nodes.
+The actual state of the nodes would not matter in the output.
+
+The following field names can be specified for the **status** and **drain**
+subcommands:
+
+**state**
+   State of node(s): "online", "offline", "avail", "exclude", "drain",
+   "draining", "drained", "all"
+
+**nnodes**
+   number of nodes
+
+**ranks**
+   ranks of nodes
+
+**nodelist**
+   node names
+
+**timestamp**
+   If node(s) in drain/draining/drained state, timestamp of node(s)
+   set to drain.
+
+**reason**
+   If node(s) in drain/draining/drained state, reason node(s) set to
+   drain.
+
+The following field names can be specified for the **list** subcommand:
+
+**state**
+   State of node(s): "up", "down", "allocated", "free", "all"
+
+**queue**
+   queue(s) associated with resources.
+
+**properties**
+   Properties associated with resources.
+
+**propertiesx**
+   Properties associated with resources, but with queue names removed.
+
+**nnodes**
+   number of nodes
+
+**ncores**
+   number of cores
+
+**ngpus**
+   number of gpus
+
+**ranks**
+   ranks of nodes
+
+**nodelist**
+   node names
+
+**rlist**
+   Short form string of all resources.
+
 
 CONFIGURATION
 =============

@@ -21,7 +21,8 @@
  *
  * associated eventlog entries when restarting
  *
- * t_depend - "submit"
+ * t_submit = "submit"
+ * t_depend - "validate"
  * t_priority - "priority" (not saved, can be entered multiple times)
  * t_sched - "depend" (not saved, can be entered multiple times)
  * t_run - "alloc"
@@ -36,8 +37,7 @@ struct job {
     int urgency;
     int64_t priority;
     double t_submit;
-    // t_depend is identical to t_submit
-    // double t_depend;
+    double t_depend;
     double t_run;
     double t_cleanup;
     double t_inactive;
@@ -85,6 +85,7 @@ struct job {
     void *list_handle;
 
     int eventlog_seq;           /* last event seq read */
+    int submit_version;         /* version number in submit context */
 };
 
 void job_destroy (void *data);
@@ -98,12 +99,22 @@ struct job *job_create (flux_t *h, flux_jobid_t id);
  */
 int job_parse_jobspec (struct job *job, const char *s);
 
+/* identical to above, but all nonfatal errors will return error.
+ * Primarily used for testing.
+ */
+int job_parse_jobspec_fatal (struct job *job, const char *s);
+
 /* Parse and internally cache R.  Set values for:
  * - expiration
  * - nnodes
  * - nodelist
  */
 int job_parse_R (struct job *job, const char *s);
+
+/* identical to above, but all nonfatal errors will return error.
+ * Primarily used for testing.
+ */
+int job_parse_R_fatal (struct job *job, const char *s);
 
 #endif /* ! _FLUX_JOB_LIST_JOB_DATA_H */
 

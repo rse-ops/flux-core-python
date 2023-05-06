@@ -135,6 +135,11 @@ static bool search_direction (struct job *job)
         return false;
 }
 
+static void set_submit_timestamp (struct job *job, double timestamp)
+{
+    job->t_submit = timestamp;
+}
+
 static void update_job_state (struct job_state_ctx *jsctx,
                               struct job *job,
                               flux_job_state_t new_state,
@@ -144,7 +149,7 @@ static void update_job_state (struct job_state_ctx *jsctx,
 
     job->state = new_state;
     if (job->state == FLUX_JOB_STATE_DEPEND)
-        job->t_submit = timestamp;
+        job->t_depend = timestamp;
     else if (job->state == FLUX_JOB_STATE_RUN)
         job->t_run = timestamp;
     else if (job->state == FLUX_JOB_STATE_CLEANUP)
@@ -568,6 +573,7 @@ static struct job *eventlog_restart_parse (struct job_state_ctx *jsctx,
         if (!strcmp (name, "submit")) {
             if (submit_context_parse (jsctx->h, job, context) < 0)
                 goto error;
+            set_submit_timestamp (job, timestamp);
         }
         else if (!strcmp (name, "validate")) {
             update_job_state (jsctx, job, FLUX_JOB_STATE_DEPEND, timestamp);
@@ -596,15 +602,10 @@ static struct job *eventlog_restart_parse (struct job_state_ctx *jsctx,
             /* context not required if no annotations */
             if (context) {
                 json_t *annotations;
-                if (!(annotations = json_object_get (context, "annotations"))) {
-                    flux_log (jsctx->h, LOG_ERR,
-                              "%s: alloc context for %ju invalid",
-                              __FUNCTION__, (uintmax_t)job->id);
-                    errno = EPROTO;
-                    goto error;
+                if ((annotations = json_object_get (context, "annotations"))) {
+                    if (!json_is_null (annotations))
+                        job->annotations = json_incref (annotations);
                 }
-                if (!json_is_null (annotations))
-                    job->annotations = json_incref (annotations);
             }
 
             if (job->state == FLUX_JOB_STATE_SCHED)
@@ -899,12 +900,14 @@ static int submit_context_parse (flux_t *h,
 {
     int urgency;
     int userid;
+    int version = -1;
 
     if (!context
         || json_unpack (context,
-                        "{ s:i s:i }",
+                        "{ s:i s:i s?i }",
                         "urgency", &urgency,
-                        "userid", &userid) < 0) {
+                        "userid", &userid,
+                        "version", &version) < 0) {
         flux_log (h, LOG_ERR, "%s: submit context invalid: %ju",
                   __FUNCTION__, (uintmax_t)job->id);
         errno = EPROTO;
@@ -913,6 +916,7 @@ static int submit_context_parse (flux_t *h,
 
     job->userid = userid;
     job->urgency = urgency;
+    job->submit_version = version;
     return 0;
 }
 
@@ -920,6 +924,7 @@ static int journal_submit_event (struct job_state_ctx *jsctx,
                                  struct job *job,
                                  flux_jobid_t id,
                                  int eventlog_seq,
+                                 double timestamp,
                                  json_t *context)
 {
     if (!job) {
@@ -941,6 +946,7 @@ static int journal_submit_event (struct job_state_ctx *jsctx,
 
     if (submit_context_parse (jsctx->h, job, context) < 0)
         return -1;
+    set_submit_timestamp (job, timestamp);
 
     return 0;
 }
@@ -1300,6 +1306,7 @@ static int journal_process_event (struct job_state_ctx *jsctx, json_t *event)
                                   job,
                                   id,
                                   eventlog_seq,
+                                  timestamp,
                                   context) < 0)
             return -1;
     }

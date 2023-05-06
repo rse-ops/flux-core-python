@@ -1,4 +1,4 @@
-.. flux-help-include: true
+.. flux-help-section: jobs
 
 ============
 flux-jobs(1)
@@ -30,7 +30,7 @@ OPTIONS
 **-A**
    List jobs of all users. This is shorthand for *--user=all*.
 
-**-n, --suppress-header**
+**-n, --no-header**
    For default output, do not output column headers.
 
 **-u, --user**\ *=[USERNAME|UID]*
@@ -69,9 +69,10 @@ OPTIONS
    section for more details. A configuration snippet for an existing
    named format may be generated with ``--format=get-config=NAME``.
 
-**--color**\ *=WHEN*
-   Control output coloring. WHEN can be *never*, *always*, or *auto*.
-   Defaults to *auto*.
+**--color**\ *[=WHEN]*
+   Control output coloring.  The optional argument *WHEN* can be
+   *auto*, *never*, or *always*.  If *WHEN* is omitted, it defaults to
+   *always*.  Otherwise the default is *auto*.
 
 **--stats**
    Output a summary of job statistics before the header.  By default
@@ -161,13 +162,16 @@ following is the format used for the default format:
 
 If a format field is preceded by the special string ``?:`` this will
 cause the field to be removed entirely from output if the result would
-be an empty string for all jobs in the listing. E.g.::
+be an empty string or zero value for all jobs in the listing. E.g.::
 
    {id.f58:>12} ?:{exception.type}
 
 would eliminate the EXCEPTION-TYPE column if no jobs in the list received
 an exception. (Thus the job queue is only displayed if at least one job
 has a queue assigned in the default format shown above).
+
+As a reminder to the reader, some shells will interpret braces
+(``{`` and ``}``) in the format string.  They may need to be quoted.
 
 The special presentation type *h* can be used to convert an empty
 string, "0s", "0.0", or "0:00:00" to a hyphen. For example, normally
@@ -209,6 +213,10 @@ the following conversion flags are supported by *flux-jobs*:
    including the "%" character. E.g. 0.5 becomes "50%" 0.015 becomes 1.5%,
    and 0.0005 becomes 0.05% etc.
 
+As a reminder to the reader, some shells will interpret the exclamation
+point (``!``) when using a conversion flag.  The exclamation point may
+need to be escaped (``\!``).
+
 Annotations can be retrieved via the *annotations* field name.
 Specific keys and sub-object keys can be retrieved separated by a
 period (".").  For example, if the scheduler has annotated the job
@@ -219,10 +227,6 @@ As a convenience, the field names *sched* and *user* can be used as
 substitutions for *annotations.sched* and *annotations.user*.  For
 example, a reason pending status can be retrieved via
 "{sched.reason_pending}".
-
-As a reminder to the reader, some shells may interpret special
-characters in Python's string format syntax.  The format may need to
-be quoted or escaped to work under certain shells.
 
 The field names that can be specified are:
 

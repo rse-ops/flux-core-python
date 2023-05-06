@@ -130,7 +130,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -723,8 +722,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -891,6 +888,7 @@ installed_conf_cppflags = \
 	-DINSTALLED_SHELL_PLUGINPATH=\"$(fluxlibdir)/shell/plugins\" \
 	-DINSTALLED_SHELL_INITRC=\"$(fluxrcdir)/shell/initrc.lua\" \
 	-DINSTALLED_JOBTAP_PLUGINPATH=\"$(fluxlibdir)/job-manager/plugins\" \
+	-DINSTALLED_UPMI_PLUGINPATH=\"$(fluxlibdir)/upmi/plugins\" \
 	-DINSTALLED_CMDHELP_PATTERN=\"${datadir}/flux/help.d/*.json\" \
 	-DINSTALLED_NO_DOCS_PATH=\"${datadir}/flux/.nodocs\" \
 	-DINSTALLED_RUNDIR=\"${runstatedir}/flux\" \
@@ -905,13 +903,14 @@ intree_conf_cppflags = \
 	-DINTREE_PYTHON_PATH=\"$(abs_top_builddir)/src/bindings/python:$(abs_top_srcdir)/src/bindings/python\" \
 	-DINTREE_MAN_PATH=\"$(abs_top_builddir)/doc\" \
 	-DINTREE_PROGRAM_LIBRARY_PATH=\"$(abs_top_builddir)/src/common/.libs\" \
-	-DINTREE_PMI_LIBRARY_PATH=\"$(abs_top_builddir)/src/common/.libs/libpmi.so\" \
+	-DINTREE_PMI_LIBRARY_PATH=\"$(abs_top_builddir)/src/common/flux/.libs/libpmi.so\" \
 	-DINTREE_RC1_PATH=\"$(abs_top_srcdir)/etc/rc1\" \
 	-DINTREE_RC3_PATH=\"$(abs_top_srcdir)/etc/rc3\" \
 	-DINTREE_SHELL_PATH=\"$(abs_top_builddir)/src/shell/flux-shell\" \
 	-DINTREE_SHELL_PLUGINPATH=\"$(abs_top_builddir)/src/shell/plugins\" \
 	-DINTREE_SHELL_INITRC=\"$(abs_top_srcdir)/src/shell/initrc.lua\" \
 	-DINTREE_JOBTAP_PLUGINPATH=\"$(abs_top_builddir)/src/modules/job-manager/plugins/.libs\" \
+	-DINTREE_UPMI_PLUGINPATH=\"$(abs_top_builddir)/src/common/libpmi/plugins/.libs\" \
 	-DINTREE_CMDHELP_PATTERN=\"${abs_top_builddir}/etc/flux/help.d/*.json\" \
 	-DINTREE_NO_DOCS_PATH=\"${abs_top_builddir}/etc/flux/.nodocs\" \
 	-DINTREE_BINDIR=\"${abs_top_builddir}/src/cmd\"

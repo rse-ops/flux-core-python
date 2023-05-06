@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include <flux/core.h>
 #include <flux/optparse.h>
+#include <jansson.h>
 
 // set printf format attribute on this curses function for our convenience
 int mvwprintw(WINDOW *win, int y, int x, const char *fmt, ...)
@@ -29,9 +30,15 @@ enum {
 struct top {
     flux_t *h;
     char *title;
+    json_t *flux_config;
+    const char *queue;
+    json_t *queue_constraint;
     flux_jobid_t id;
 
     unsigned int test_exit:1;    /*  Exit after first joblist pane update */
+    unsigned int test_exit_count;
+    FILE *testf;
+    const char *f_char;
 
     uint32_t size;
     struct summary_pane *summary_pane;
@@ -52,9 +59,11 @@ struct dimension {
 
 struct top *top_create (const char *uri,
                         const char *prefix,
+                        const char *queue,
                         flux_error_t *errp);
 void top_destroy (struct top *top);
 int top_run (struct top *top, int reactor_flags);
+void test_exit_check (struct top *top);
 
 struct summary_pane *summary_pane_create (struct top *top);
 void summary_pane_destroy (struct summary_pane *sum);

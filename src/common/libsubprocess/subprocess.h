@@ -35,9 +35,6 @@ typedef struct flux_command flux_cmd_t;
  */
 typedef struct flux_subprocess flux_subprocess_t;
 
-/*  flux_subprocess_server_t: Handler for a subprocess remote server */
-typedef struct flux_subprocess_server flux_subprocess_server_t;
-
 /*
  * Subprocess states, on changes, will lead to calls to
  * on_state_change below.
@@ -45,17 +42,14 @@ typedef struct flux_subprocess_server flux_subprocess_server_t;
  * Possible state changes:
  *
  * init -> running
- * init -> exec failed
  * running -> exited
  * any state -> failed
  */
 typedef enum {
     FLUX_SUBPROCESS_INIT,         /* initial state */
-    FLUX_SUBPROCESS_EXEC_FAILED,  /* exec(2) has failed, only for rexec() */
     FLUX_SUBPROCESS_RUNNING,      /* exec(2) has been called */
     FLUX_SUBPROCESS_EXITED,       /* process has exited */
-    FLUX_SUBPROCESS_FAILED,       /* internal failure, catch all for
-                                   * all other errors */
+    FLUX_SUBPROCESS_FAILED,       /* exec failure or other non-child error */
     FLUX_SUBPROCESS_STOPPED,      /* process was stopped */
 } flux_subprocess_state_t;
 
@@ -93,8 +87,7 @@ typedef void (*flux_subprocess_hook_f) (flux_subprocess_t *p, void *arg);
 typedef struct {
     flux_subprocess_f on_completion;    /* Process exited and all I/O
                                          * complete, will not be
-                                         * called if EXEC_FAILED or
-                                         * FAILED states reached.
+                                         * called if FAILED state reached.
                                          */
     flux_subprocess_state_f on_state_change;  /* Process state change        */
     flux_subprocess_output_f on_channel_out; /* Read from channel when ready */
@@ -112,53 +105,6 @@ typedef struct {
     flux_subprocess_hook_f post_fork;
     void *post_fork_arg;
 } flux_subprocess_hooks_t;
-
-/*
- *  General support:
- */
-
-/*  Start a subprocess server on the handle `h`. Registers message
- *   handlers, etc for remote execution.
- */
-flux_subprocess_server_t *flux_subprocess_server_start (flux_t *h,
-                                                        const char *local_uri,
-                                                        uint32_t rank);
-
-
-typedef int (*flux_subprocess_server_auth_f) (const flux_msg_t *msg,
-                                              void *arg);
-
-/*   Register an authorization function to the subprocess server
- *
- *   The registered function should return 0 to allow the request to
- *    proceed, and -1 with errno set to deny the request.
- */
-void flux_subprocess_server_set_auth_cb (flux_subprocess_server_t *s,
-                                         flux_subprocess_server_auth_f fn,
-                                         void *arg);
-
-/*  Stop a subprocess server / cleanup flux_subprocess_server_t.  Will
- *  send a SIGKILL to all remaining subprocesses.
- */
-void flux_subprocess_server_stop (flux_subprocess_server_t *s);
-
-/* Send all subprocesses signal and wait up to wait_time seconds for
- * all subprocesses to complete.  This is typically called to send
- * SIGTERM before calling flux_subprocess_server_stop(), allowing
- * users to send a signal to inform subprocesses to complete / cleanup
- * before they are sent SIGKILL.
- *
- * This function will enter the reactor to wait for subprocesses to
- * complete, should only be called on cleanup path when primary
- * reactor has exited.
- */
-int flux_subprocess_server_subprocesses_kill (flux_subprocess_server_t *s,
-                                              int signum,
-                                              double wait_time);
-
-/* Terminate all subprocesses started by a sender id */
-int flux_subprocess_server_terminate_by_uuid (flux_subprocess_server_t *s,
-                                              const char *id);
 
 /*
  * Convenience Functions:
@@ -480,8 +426,7 @@ const char *flux_subprocess_state_string (flux_subprocess_state_t state);
 
 int flux_subprocess_rank (flux_subprocess_t *p);
 
-/* Returns the errno causing the FLUX_SUBPROCESS_EXEC_FAILED or
- * FLUX_SUBPROCESS_FAILED states to be reached.
+/* Returns the errno causing the FLUX_SUBPROCESS_FAILED states to be reached.
  */
 int flux_subprocess_fail_errno (flux_subprocess_t *p);
 
@@ -520,6 +465,23 @@ int flux_subprocess_aux_set (flux_subprocess_t *p,
  *   no such context exists, then NULL is returned.
  */
 void *flux_subprocess_aux_get (flux_subprocess_t *p, const char *name);
+
+typedef void (*subprocess_log_f) (void *arg,
+                                  const char *file,
+                                  int line,
+                                  const char *func,
+                                  const char *subsys,
+                                  int level,
+                                  const char *fmt,
+                                  va_list args);
+
+/* Set default internal logging function.
+ */
+int flux_set_default_subprocess_log (flux_t *h,
+                                     subprocess_log_f log_fn,
+                                     void *log_data);
+
+
 
 #ifdef __cplusplus
 }

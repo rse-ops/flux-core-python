@@ -42,6 +42,27 @@ test_expect_success 'flux-keygen --name=test works' '
 	test -f cert2 &&
 	grep testcert cert2
 '
+test_expect_success 'flux-keygen --meta works' '
+	flux keygen --meta mammal=chinchilla,reptile=chamelion cert3 &&
+	test -f cert3 &&
+	grep mammal cert3 &&
+	grep reptile cert3
+'
+test_expect_success 'flux-keygen --meta can update keygen.hostname' '
+	flux keygen --meta=keygen.hostname=myhost cert4 &&
+	test -f cert4 &&
+	grep myhost cert4
+'
+test_expect_success 'flux-keygen --meta value can be an empty string' '
+	flux keygen --meta smurf= cert5 &&
+	test -f cert5 &&
+	grep smurf cert5
+'
+test_expect_success 'flux-keygen --meta equal sign can be missing' '
+	flux keygen --meta smurf cert6 &&
+	test -f cert6 &&
+	grep smurf cert6
+'
 test_expect_success 'flux-keygen fails with extra positional argument' '
 	test_must_fail flux keygen cert xyz
 '
@@ -75,6 +96,34 @@ test_expect_success 'flux-python command runs the configured python' '
 	test "${expected}" = "${actual}"
 '
 
+test_expect_success 'flux fortune help works' '
+	flux fortune --help | grep category
+'
+
+test_expect_success 'flux fortune works' '
+	flux fortune
+'
+
+test_expect_success 'flux fortune all (default) works' '
+	flux fortune -c all
+'
+
+test_expect_success 'flux fortune with valentine works' '
+	flux fortune -c valentines
+'
+
+test_expect_success 'flux fortune with fun works' '
+	flux fortune -c fun
+'
+
+test_expect_success 'flux fortune with facts works' '
+	flux fortune -c facts
+'
+
+test_expect_success 'flux fortune with art works' '
+	flux fortune -c art
+'
+
 # Minimal is sufficient for these tests, but test_under_flux unavailable
 # clear the RC paths
 ARGS="-o,-Sbroker.rc1_path=,-Sbroker.rc3_path="
@@ -84,6 +133,22 @@ test_expect_success 'flux-start in exec mode works' "
 "
 test_expect_success 'flux-start in subprocess/pmi mode works (size 1)' "
 	flux start ${ARGS} -s1 flux getattr size | grep -x 1
+"
+test_expect_success 'and broker.boot-method=simple' "
+	test $(flux start ${ARGS} -s1 \
+		flux getattr broker.boot-method) = "simple"
+"
+test_expect_success 'although method can be forced to single with attribute' "
+	test $(flux start ${ARGS} -s1 -o,-Sbroker.boot-method=single \
+		flux getattr broker.boot-method) = "single"
+"
+test_expect_success 'or forced by setting FLUX_PMI_CLIENT_METHODS' "
+	test $(FLUX_PMI_CLIENT_METHODS="single" flux start ${ARGS} -s1 \
+		flux getattr broker.boot-method) = "single"
+"
+test_expect_success 'start fails when broker.boot-method=unknown' "
+	test_must_fail flux start ${ARGS} -o,-Sbroker.boot-method=unknown \
+		/bin/true
 "
 test_expect_success 'flux-start in subprocess/pmi mode works (size 2)' "
 	flux start ${ARGS} -s2 flux getattr size | grep -x 2
@@ -524,29 +589,22 @@ test_expect_success 'broker fails on invalid broker.critical-ranks option' '
 test_expect_success 'broker fails on unknown option' '
 	test_must_fail flux start ${ARGS} -o,--not-an-option /bin/true
 '
-
 test_expect_success 'flux-help command list can be extended' '
 	mkdir help.d &&
 	cat <<-EOF  > help.d/test.json &&
-	[{ "category": "test", "command": "test", "description": "a test" }]
+	[{ "name": "test", "description": "test commands",
+	 "commands": [ {"name": "test", "description": "a test" }]}]
 	EOF
-	flux help 2>&1 | sed "0,/^$/d" >help.expected &&
-	cat <<-EOF  >>help.expected &&
-	Common commands from flux-test:
-	   test               a test
-	EOF
-	FLUX_CMDHELP_PATTERN="help.d/*" flux help 2>&1 | sed "0,/^$/d" > help.out &&
-	test_cmp help.expected help.out &&
+	FLUX_CMDHELP_PATTERN="help.d/*" flux help > help.out 2>&1 &&
+	grep "^test commands" help.out &&
+	grep "a test" help.out &&
 	cat <<-EOF  > help.d/test2.json &&
-	[{ "category": "test2", "command": "test2", "description": "a test two" }]
+	[{ "name": "test", "description": "test two commands",
+	 "commands": [ {"name": "test2", "description": "a test two"}]}]
 	EOF
-	cat <<-EOF  >>help.expected &&
-
-	Common commands from flux-test2:
-	   test2              a test two
-	EOF
-	FLUX_CMDHELP_PATTERN="help.d/*" flux help 2>&1 | sed "0,/^$/d" > help.out &&
-	test_cmp help.expected help.out
+	FLUX_CMDHELP_PATTERN="help.d/*" flux help > help2.out 2>&1 &&
+	grep "^test two commands" help2.out &&
+	grep "a test two" help2.out
 '
 test_expect_success 'flux-help command can display manpages for subcommands' '
 	PWD=$(pwd) &&

@@ -115,7 +115,7 @@ static struct optparse_option opts[] = {
     { .name = "setattr",    .key = 'S', .has_arg = 1, .arginfo = "ATTR=VAL",
       .usage = "Set broker attribute", },
     { .name = "config-path",.key = 'c', .has_arg = 1, .arginfo = "PATH",
-      .usage = "Set broker config directory (default: none)", },
+      .usage = "Set broker config from PATH (default: none)", },
     OPTPARSE_TABLE_END,
 };
 
@@ -141,7 +141,7 @@ void parse_command_line_arguments (int argc, char *argv[], broker_ctx_t *ctx)
         if ((val = strchr (attr, '=')))
             *val++ = '\0';
         if (attr_add (ctx->attrs, attr, val, 0) < 0)
-            if (attr_set (ctx->attrs, attr, val, true) < 0)
+            if (attr_set (ctx->attrs, attr, val) < 0)
                 log_err_exit ("setattr %s=%s", attr, val);
         free (attr);
     }
@@ -197,6 +197,7 @@ int main (int argc, char *argv[])
     struct sigaction old_sigact_term;
     flux_msg_handler_t **handlers = NULL;
     const flux_conf_t *conf;
+    const char *method;
 
     memset (&ctx, 0, sizeof (ctx));
     log_init (argv[0]);
@@ -325,14 +326,20 @@ int main (int argc, char *argv[])
      * Default method is pmi.
      * If [bootstrap] is defined in configuration, use static configuration.
      */
-    if (flux_conf_unpack (conf, NULL, "{s:{}}", "bootstrap") == 0) {
-        if (boot_config (ctx.h, ctx.overlay, ctx.attrs) < 0) {
+    if (attr_get (ctx.attrs, "broker.boot-method", &method, NULL) < 0) {
+        if (flux_conf_unpack (conf, NULL, "{s:{}}", "bootstrap") == 0)
+            method = "config";
+        else
+            method = NULL;
+    }
+    if (!method || !streq (method, "config")) {
+        if (boot_pmi (ctx.overlay, ctx.attrs) < 0) {
             log_msg ("bootstrap failed");
             goto cleanup;
         }
     }
-    else { // PMI
-        if (boot_pmi (ctx.overlay, ctx.attrs) < 0) {
+    else {
+        if (boot_config (ctx.h, ctx.overlay, ctx.attrs) < 0) {
             log_msg ("bootstrap failed");
             goto cleanup;
         }
@@ -375,11 +382,11 @@ int main (int argc, char *argv[])
     }
     int flags;
     assert (attr_get (ctx.attrs, "rank", NULL, &flags) == 0
-            && (flags & FLUX_ATTRFLAG_IMMUTABLE));
+            && (flags & ATTR_IMMUTABLE));
     assert (attr_get (ctx.attrs, "size", NULL, &flags) == 0
-            && (flags & FLUX_ATTRFLAG_IMMUTABLE));
+            && (flags & ATTR_IMMUTABLE));
     assert (attr_get (ctx.attrs, "hostlist", NULL, &flags) == 0
-            && (flags & FLUX_ATTRFLAG_IMMUTABLE));
+            && (flags & ATTR_IMMUTABLE));
 
     if (!(ctx.groups = groups_create (&ctx))) {
         log_err ("groups_create");
@@ -400,6 +407,11 @@ int main (int argc, char *argv[])
         goto cleanup;
 
     if (ctx.rank == 0 && execute_parental_notifications (&ctx) < 0)
+        goto cleanup;
+
+    /* Set up internal logging for libsubprocesses.
+     */
+    if (flux_set_default_subprocess_log (ctx.h, flux_llog, ctx.h) < 0)
         goto cleanup;
 
     if (create_runat_phases (&ctx) < 0)
@@ -503,12 +515,6 @@ int main (int argc, char *argv[])
     if (ctx.verbose > 1)
         log_msg ("exited event loop");
 
-    /* inform all lingering subprocesses we are tearing down.  Do this
-     * before any cleanup/teardown below, as this call will re-enter
-     * the reactor.
-     */
-    exec_terminate_subprocesses (ctx.h);
-
 cleanup:
     if (ctx.verbose > 1)
         log_msg ("cleaning up");
@@ -589,7 +595,7 @@ static void init_attrs_broker_pid (attr_t *attrs, pid_t pid)
     if (attr_add (attrs,
                   attrname,
                   pidval,
-                  FLUX_ATTRFLAG_IMMUTABLE) < 0)
+                  ATTR_IMMUTABLE) < 0)
         log_err_exit ("attr_add %s", attrname);
 }
 
@@ -627,7 +633,7 @@ static void init_attrs_starttime (attr_t *attrs, double starttime)
     char buf[32];
 
     snprintf (buf, sizeof (buf), "%.2f", starttime);
-    if (attr_add (attrs, "broker.starttime", buf, FLUX_ATTRFLAG_IMMUTABLE) < 0)
+    if (attr_add (attrs, "broker.starttime", buf, ATTR_IMMUTABLE) < 0)
         log_err_exit ("error setting broker.starttime attribute");
 }
 
@@ -650,7 +656,7 @@ static void init_attrs (attr_t *attrs, pid_t pid, struct flux_msg_cred *cred)
 
     char tmp[32];
     snprintf (tmp, sizeof (tmp), "%ju", (uintmax_t)cred->userid);
-    if (attr_add (attrs, "security.owner", tmp, FLUX_ATTRFLAG_IMMUTABLE) < 0)
+    if (attr_add (attrs, "security.owner", tmp, ATTR_IMMUTABLE) < 0)
         log_err_exit ("attr_add owner");
 }
 
@@ -804,7 +810,7 @@ static int check_statedir (attr_t *attrs)
     const char *statedir;
 
     if (attr_get (attrs, "statedir", &statedir, NULL) < 0) {
-        if (attr_add (attrs, "statedir", NULL, FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+        if (attr_add (attrs, "statedir", NULL, ATTR_IMMUTABLE) < 0) {
             log_err ("error creating statedir broker attribute");
             return -1;
         }
@@ -812,7 +818,7 @@ static int check_statedir (attr_t *attrs)
     else {
         if (checkdir ("statedir", statedir) < 0)
             return -1;
-        if (attr_set_flags (attrs, "statedir", FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+        if (attr_set_flags (attrs, "statedir", ATTR_IMMUTABLE) < 0) {
             log_err ("error setting statedir broker attribute flags");
             return -1;
         }
@@ -884,7 +890,7 @@ static int create_rundir (attr_t *attrs)
     /*  rundir is now fixed, so make the attribute immutable, and
      *   schedule the dir for cleanup at exit if we created it here.
      */
-    if (attr_set_flags (attrs, "rundir", FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+    if (attr_set_flags (attrs, "rundir", ATTR_IMMUTABLE) < 0) {
         log_err ("error setting rundir broker attribute flags");
         goto done;
     }
@@ -913,7 +919,7 @@ static int init_local_uri_attr (struct overlay *ov, attr_t *attrs)
             log_msg ("buffer overflow while building local-uri");
             return -1;
         }
-        if (attr_add (attrs, "local-uri", buf, FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+        if (attr_add (attrs, "local-uri", buf, ATTR_IMMUTABLE) < 0) {
             log_err ("setattr local-uri");
             return -1;
         }
@@ -963,7 +969,7 @@ static int init_critical_ranks_attr (struct overlay *ov, attr_t *attrs)
         if (attr_add (attrs,
                       "broker.critical-ranks",
                       ranks,
-                      FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                      ATTR_IMMUTABLE) < 0) {
             log_err ("attr_add critical_ranks");
             goto out;
         }
@@ -978,7 +984,7 @@ static int init_critical_ranks_attr (struct overlay *ov, attr_t *attrs)
          */
         if (attr_set_flags (attrs,
                             "broker.critical-ranks",
-                            FLUX_ATTRFLAG_IMMUTABLE) < 0) {
+                            ATTR_IMMUTABLE) < 0) {
             log_err ("failed to make broker.criitcal-ranks attr immutable");
             goto out;
         }
@@ -1433,7 +1439,8 @@ static void broker_module_status_cb (flux_t *h,
 }
 
 #if CODE_COVERAGE_ENABLED
-void __gcov_flush (void);
+void __gcov_dump (void);
+void __gcov_reset (void);
 #endif
 
 static void broker_panic_cb (flux_t *h, flux_msg_handler_t *mh,
@@ -1450,7 +1457,8 @@ static void broker_panic_cb (flux_t *h, flux_msg_handler_t *mh,
     }
     fprintf (stderr, "PANIC: %s\n", reason);
 #if CODE_COVERAGE_ENABLED
-    __gcov_flush ();
+    __gcov_dump ();
+    __gcov_reset ();
 #endif
     _exit (1);
     /*NOTREACHED*/
@@ -1459,11 +1467,6 @@ static void broker_panic_cb (flux_t *h, flux_msg_handler_t *mh,
 static void broker_disconnect_cb (flux_t *h, flux_msg_handler_t *mh,
                                const flux_msg_t *msg, void *arg)
 {
-    const char *sender;
-
-    if ((sender = flux_msg_route_first (msg)))
-        exec_terminate_subprocesses_by_uuid (h, sender);
-    /* no response */
 }
 
 static int route_to_handle (const flux_msg_t *msg, void *arg)
@@ -1633,6 +1636,7 @@ static struct internal_service services[] = {
     { "state-machine",      NULL },
     { "groups",             NULL },
     { "shutdown",           NULL },
+    { "rexec",              NULL },
     { NULL, NULL, },
 };
 

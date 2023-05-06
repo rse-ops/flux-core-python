@@ -3,6 +3,9 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* assume broken locale configuration and disable non-ascii characters */
+#undef ASSUME_BROKEN_LOCALE
+
 /* code coverage support */
 #undef CODE_COVERAGE_ENABLED
 
@@ -83,9 +86,6 @@
 
 /* Define to 1 if you have the `m' library (-lm). */
 #undef HAVE_LIBM
-
-/* Enable PMIx bootstrap */
-#undef HAVE_LIBPMIX
 
 /* Define to 1 if you have the `rt' library (-lrt). */
 #undef HAVE_LIBRT

@@ -18,7 +18,7 @@ fj_wait_event() {
 submit_job() {
 	local jobid=$(flux job submit sleeplong.json) &&
 	fj_wait_event $jobid start >/dev/null &&
-	flux job cancel $jobid &&
+	flux cancel $jobid &&
 	fj_wait_event $jobid clean >/dev/null &&
 	echo $jobid
 }
@@ -30,7 +30,7 @@ get_timestamp_field() {
 }
 
 test_expect_success 'job-info: generate jobspec for simple test job' '
-	flux mini run --dry-run -n1 -N1 sleep 300 > sleeplong.json
+	flux run --dry-run -n1 -N1 sleep 300 > sleeplong.json
 '
 
 #
@@ -74,7 +74,7 @@ test_expect_success 'flux job info jobspec works' '
 '
 
 test_expect_success 'flux job info --original jobspec works' '
-	jobid=$(flux mini submit --env=ORIGINALTHING=t true) &&
+	jobid=$(flux submit --env=ORIGINALTHING=t true) &&
 	flux job info --original $jobid jobspec > jobspec_original.out &&
 	grep ORIGINALTHING jobspec_original.out
 '

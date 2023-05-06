@@ -170,4 +170,64 @@ test_expect_success 'flux mini batch: MPI env vars are not set in batch script' 
 	flux job status $id &&
 	test_must_fail grep OMPI_MCA_pmix envtest.out
 '
+test_expect_success 'flux mini batch: --dump works' '
+	id=$(flux mini batch -N1 --dump \
+		--flags=waitable --wrap true) &&
+	run_timeout 60 flux job wait $id &&
+	tar tvf flux-${id}-dump.tgz
+'
+test_expect_success 'flux mini batch: --dump=FILE works' '
+	id=$(flux mini batch -N1 --dump=testdump.tgz \
+		--flags=waitable --wrap true) &&
+	run_timeout 60 flux job wait $id &&
+	tar tvf testdump.tgz
+'
+test_expect_success 'flux mini batch: --dump=FILE works with mustache' '
+	id=$(flux mini batch -N1 --dump=testdump-{{id}}.tgz \
+		--flags=waitable --wrap true) &&
+	run_timeout 60 flux job wait $id &&
+	tar tvf testdump-${id}.tgz
+'
+test_expect_success HAVE_JQ 'flux mini batch: supports directives in script' '
+	cat <<-EOF >directives.sh &&
+	#!/bin/sh
+	# flux: -n1
+	# flux: --job-name=test-name
+	flux resource list
+	EOF
+	flux mini batch --dry-run directives.sh > directives.json &&
+	jq -e ".attributes.system.job.name == \"test-name\"" < directives.json
+'
+test_expect_success HAVE_JQ 'flux mini batch: cmdline overrides directives' '
+	cat <<-EOF >directives2.sh &&
+	#!/bin/sh
+	# flux: -n1
+	# flux: --job-name=test-name
+	flux resource list
+	EOF
+	flux mini batch --dry-run --job-name=foo directives2.sh \
+	  > directives2.json &&
+	jq -e ".attributes.system.job.name == \"foo\"" < directives2.json
+'
+test_expect_success 'flux mini batch: bad argument in directive is caught' '
+	cat <<-EOF >directives3.sh &&
+	#!/bin/sh
+	# flux: -n1
+	# flux: --bad-arg
+	date; hostname
+	EOF
+	test_must_fail flux mini batch --dry-run directives3.sh >d3.out 2>&1 &&
+	test_debug "cat d3.out" &&
+	grep "argument parsing failed at directives3.sh line 3" d3.out
+'
+test_expect_success 'flux mini batch: shell parsing error is caught' '
+	cat <<-EOF >directives4.sh &&
+	#!/bin/sh
+	# flux: --job-name=" name
+	date; hostname
+	EOF
+	test_must_fail flux mini batch --dry-run directives4.sh >d4.out 2>&1 &&
+	test_debug "cat d4.out" &&
+	grep "directives4.sh: line 2" d4.out
+'
 test_done

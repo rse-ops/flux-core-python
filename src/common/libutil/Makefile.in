@@ -103,7 +103,7 @@ TESTS = test_sha1.t$(EXEEXT) test_sha256.t$(EXEEXT) \
 	test_grudgeset.t$(EXEEXT) test_digest.t$(EXEEXT) \
 	test_jpath.t$(EXEEXT) test_errprintf.t$(EXEEXT) \
 	test_fileref.t$(EXEEXT) test_hola.t$(EXEEXT) \
-	test_strstrip.t$(EXEEXT)
+	test_strstrip.t$(EXEEXT) test_slice.t$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = src/common/libutil
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -130,7 +130,6 @@ am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
 	$(top_srcdir)/config/x_ac_expand_install_dirs.m4 \
 	$(top_srcdir)/config/x_ac_jansson.m4 \
 	$(top_srcdir)/config/x_ac_malloc.m4 \
-	$(top_srcdir)/config/x_ac_pmix.m4 \
 	$(top_srcdir)/config/x_ac_sanitize.m4 \
 	$(top_srcdir)/src/common/libev/libev.m4 \
 	$(top_srcdir)/configure.ac
@@ -150,7 +149,7 @@ am_libutil_la_OBJECTS = ipaddr.lo log.lo xzmalloc.lo monotime.lo \
 	stdlog.lo lru_cache.lo dirwalk.lo tomltk.lo timestamp.lo \
 	mnemonic.lo mn_wordlist.lo fluid.lo aux.lo fdutils.lo fsd.lo \
 	intree.lo grudgeset.lo digest.lo jpath.lo uri.lo errprintf.lo \
-	fileref.lo hola.lo strstrip.lo
+	fileref.lo hola.lo slice.lo strstrip.lo
 libutil_la_OBJECTS = $(am_libutil_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -170,7 +169,7 @@ am__EXEEXT_1 = test_sha1.t$(EXEEXT) test_sha256.t$(EXEEXT) \
 	test_grudgeset.t$(EXEEXT) test_digest.t$(EXEEXT) \
 	test_jpath.t$(EXEEXT) test_errprintf.t$(EXEEXT) \
 	test_fileref.t$(EXEEXT) test_hola.t$(EXEEXT) \
-	test_strstrip.t$(EXEEXT)
+	test_strstrip.t$(EXEEXT) test_slice.t$(EXEEXT)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_test_aux_t_OBJECTS = test/test_aux_t-aux.$(OBJEXT)
 test_aux_t_OBJECTS = $(am_test_aux_t_OBJECTS)
@@ -257,6 +256,9 @@ test_sha1_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_test_sha256_t_OBJECTS = test/test_sha256_t-sha256.$(OBJEXT)
 test_sha256_t_OBJECTS = $(am_test_sha256_t_OBJECTS)
 test_sha256_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
+am_test_slice_t_OBJECTS = test/test_slice_t-slice.$(OBJEXT)
+test_slice_t_OBJECTS = $(am_test_slice_t_OBJECTS)
+test_slice_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_test_stdlog_t_OBJECTS = test/test_stdlog_t-stdlog.$(OBJEXT)
 test_stdlog_t_OBJECTS = $(am_test_stdlog_t_OBJECTS)
 test_stdlog_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
@@ -322,9 +324,10 @@ SOURCES = $(libutil_la_SOURCES) $(test_aux_t_SOURCES) \
 	$(test_kary_t_SOURCES) $(test_lru_cache_t_SOURCES) \
 	$(test_popen2_t_SOURCES) $(test_read_all_t_SOURCES) \
 	$(test_sha1_t_SOURCES) $(test_sha256_t_SOURCES) \
-	$(test_stdlog_t_SOURCES) $(test_strstrip_t_SOURCES) \
-	$(test_tomltk_t_SOURCES) $(test_unlink_t_SOURCES) \
-	$(test_veb_t_SOURCES) $(test_wallclock_t_SOURCES)
+	$(test_slice_t_SOURCES) $(test_stdlog_t_SOURCES) \
+	$(test_strstrip_t_SOURCES) $(test_tomltk_t_SOURCES) \
+	$(test_unlink_t_SOURCES) $(test_veb_t_SOURCES) \
+	$(test_wallclock_t_SOURCES)
 DIST_SOURCES = $(libutil_la_SOURCES) $(test_aux_t_SOURCES) \
 	$(test_blobref_t_SOURCES) $(test_cleanup_t_SOURCES) \
 	$(test_cronodate_t_SOURCES) $(test_digest_t_SOURCES) \
@@ -337,9 +340,10 @@ DIST_SOURCES = $(libutil_la_SOURCES) $(test_aux_t_SOURCES) \
 	$(test_kary_t_SOURCES) $(test_lru_cache_t_SOURCES) \
 	$(test_popen2_t_SOURCES) $(test_read_all_t_SOURCES) \
 	$(test_sha1_t_SOURCES) $(test_sha256_t_SOURCES) \
-	$(test_stdlog_t_SOURCES) $(test_strstrip_t_SOURCES) \
-	$(test_tomltk_t_SOURCES) $(test_unlink_t_SOURCES) \
-	$(test_veb_t_SOURCES) $(test_wallclock_t_SOURCES)
+	$(test_slice_t_SOURCES) $(test_stdlog_t_SOURCES) \
+	$(test_strstrip_t_SOURCES) $(test_tomltk_t_SOURCES) \
+	$(test_unlink_t_SOURCES) $(test_veb_t_SOURCES) \
+	$(test_wallclock_t_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -677,8 +681,6 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PKG_CONFIG = @PKG_CONFIG@
-PMIX_CFLAGS = @PMIX_CFLAGS@
-PMIX_LIBS = @PMIX_LIBS@
 PYLINT = @PYLINT@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@
@@ -910,6 +912,8 @@ libutil_la_SOURCES = \
 	fileref.h \
 	hola.c \
 	hola.h \
+	slice.c \
+	slice.h \
 	strstrip.c \
 	strstrip.h
 
@@ -1026,6 +1030,9 @@ test_fileref_t_LDADD = $(test_ldadd)
 test_hola_t_SOURCES = test/hola.c
 test_hola_t_CPPFLAGS = $(test_cppflags)
 test_hola_t_LDADD = $(test_ldadd)
+test_slice_t_SOURCES = test/slice.c
+test_slice_t_CPPFLAGS = $(test_cppflags)
+test_slice_t_LDADD = $(test_ldadd)
 all: all-am
 
 .SUFFIXES:
@@ -1226,6 +1233,12 @@ test/test_sha256_t-sha256.$(OBJEXT): test/$(am__dirstamp) \
 test_sha256.t$(EXEEXT): $(test_sha256_t_OBJECTS) $(test_sha256_t_DEPENDENCIES) $(EXTRA_test_sha256_t_DEPENDENCIES) 
 	@rm -f test_sha256.t$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_sha256_t_OBJECTS) $(test_sha256_t_LDADD) $(LIBS)
+test/test_slice_t-slice.$(OBJEXT): test/$(am__dirstamp) \
+	test/$(DEPDIR)/$(am__dirstamp)
+
+test_slice.t$(EXEEXT): $(test_slice_t_OBJECTS) $(test_slice_t_DEPENDENCIES) $(EXTRA_test_slice_t_DEPENDENCIES) 
+	@rm -f test_slice.t$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(test_slice_t_OBJECTS) $(test_slice_t_LDADD) $(LIBS)
 test/test_stdlog_t-stdlog.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
@@ -1299,6 +1312,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/setenvf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha1.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sha256.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slice.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stdlog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strstrip.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timestamp.Plo@am__quote@
@@ -1332,6 +1346,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_read_all_t-read_all.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_sha1_t-sha1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_sha256_t-sha256.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_slice_t-slice.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_stdlog_t-stdlog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_strstrip_t-strstrip.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_tomltk_t-tomltk.Po@am__quote@
@@ -1684,6 +1699,20 @@ test/test_sha256_t-sha256.obj: test/sha256.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/sha256.c' object='test/test_sha256_t-sha256.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_sha256_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_sha256_t-sha256.obj `if test -f 'test/sha256.c'; then $(CYGPATH_W) 'test/sha256.c'; else $(CYGPATH_W) '$(srcdir)/test/sha256.c'; fi`
+
+test/test_slice_t-slice.o: test/slice.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_slice_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_slice_t-slice.o -MD -MP -MF test/$(DEPDIR)/test_slice_t-slice.Tpo -c -o test/test_slice_t-slice.o `test -f 'test/slice.c' || echo '$(srcdir)/'`test/slice.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_slice_t-slice.Tpo test/$(DEPDIR)/test_slice_t-slice.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/slice.c' object='test/test_slice_t-slice.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_slice_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_slice_t-slice.o `test -f 'test/slice.c' || echo '$(srcdir)/'`test/slice.c
+
+test/test_slice_t-slice.obj: test/slice.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_slice_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_slice_t-slice.obj -MD -MP -MF test/$(DEPDIR)/test_slice_t-slice.Tpo -c -o test/test_slice_t-slice.obj `if test -f 'test/slice.c'; then $(CYGPATH_W) 'test/slice.c'; else $(CYGPATH_W) '$(srcdir)/test/slice.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_slice_t-slice.Tpo test/$(DEPDIR)/test_slice_t-slice.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/slice.c' object='test/test_slice_t-slice.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_slice_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_slice_t-slice.obj `if test -f 'test/slice.c'; then $(CYGPATH_W) 'test/slice.c'; else $(CYGPATH_W) '$(srcdir)/test/slice.c'; fi`
 
 test/test_stdlog_t-stdlog.o: test/stdlog.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_stdlog_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_stdlog_t-stdlog.o -MD -MP -MF test/$(DEPDIR)/test_stdlog_t-stdlog.Tpo -c -o test/test_stdlog_t-stdlog.o `test -f 'test/stdlog.c' || echo '$(srcdir)/'`test/stdlog.c
