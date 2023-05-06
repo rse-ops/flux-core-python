@@ -22,14 +22,12 @@
 #include <archive_entry.h>
 
 #include "ccan/base64/base64.h"
-#include "ccan/str/str.h"
 #include "src/common/libutil/dirwalk.h"
 #include "src/common/libutil/errno_safe.h"
 #include "src/common/libcontent/content.h"
 #include "src/common/libutil/fileref.h"
 
 static const int default_chunksize = 1048576;
-static const int default_small_file_threshold = 4096;
 
 static json_t *get_list_option (optparse_t *p,
                                 const char *name,
@@ -127,9 +125,7 @@ static json_t *load_fileref (flux_t *h, const char *blobref)
 
 static flux_future_t *mmap_add (flux_t *h,
                                  const char *path,
-                                 bool disable_mmap,
                                  int chunksize,
-                                 int threshold,
                                  json_t *tags)
 {
     flux_future_t *f;
@@ -154,13 +150,11 @@ static flux_future_t *mmap_add (flux_t *h,
                        "content.mmap-add",
                        FLUX_NODEID_ANY,
                        0,
-                       "{s:s s:s s:b s:i s:i s:O}",
+                       "{s:s s:s s:i s:O}",
                        "path", path,
                        "fullpath", fpath,
-                       "disable_mmap", disable_mmap ? 1 : 0,
-                       "threshold", threshold,
-                       "chunksize", chunksize,
-                       "tags", tags);
+                        "chunksize", chunksize,
+                        "tags", tags);
     ERRNO_SAFE_WRAP (free, fpath);
     return f;
 }
@@ -206,8 +200,6 @@ struct map_ctx {
     flux_t *h;
     int verbose;
     int chunksize;
-    int threshold;
-    bool disable_mmap;
     json_t *tags;
 };
 
@@ -219,12 +211,7 @@ static int map_visitor (dirwalk_t *d, void *arg)
 
     if (ctx->verbose > 0)
         printf ("%s\n", path);
-    if (!(f = mmap_add (ctx->h,
-                        path,
-                        ctx->disable_mmap,
-                        ctx->chunksize,
-                        ctx->threshold,
-                        ctx->tags))
+    if (!(f = mmap_add (ctx->h, path, ctx->chunksize, ctx->tags))
         || flux_rpc_get (f, NULL) < 0)
         log_msg_exit ("%s: %s", path, future_strerror (f, errno));
     flux_future_destroy (f);
@@ -250,10 +237,6 @@ static int subcmd_map (optparse_t *p, int ac, char *av[])
     ctx.p = p;
     ctx.verbose = optparse_get_int (p, "verbose", 0);
     ctx.chunksize = optparse_get_int (p, "chunksize", default_chunksize);
-    ctx.threshold = optparse_get_int (p,
-                                      "small-file-threshold",
-                                      default_small_file_threshold);
-    ctx.disable_mmap = optparse_hasopt (p, "disable-mmap");
     ctx.tags = get_list_option (p, "tags", "main");
     ctx.h = builtin_get_flux_handle (p);
     if (!ctx.h)
@@ -272,12 +255,7 @@ static int subcmd_map (optparse_t *p, int ac, char *av[])
             flux_future_t *f;
             if (ctx.verbose > 0)
                 printf ("%s\n", path);
-            if (!(f = mmap_add (ctx.h,
-                                path,
-                                ctx.disable_mmap,
-                                ctx.chunksize,
-                                ctx.threshold,
-                                ctx.tags))
+            if (!(f = mmap_add (ctx.h, path, ctx.chunksize, ctx.tags))
                 || flux_rpc_get (f, NULL) < 0)
                 log_msg_exit ("%s: %s", path, future_strerror (f, errno));
             flux_future_destroy (f);
@@ -344,17 +322,13 @@ static int subcmd_list (optparse_t *p, int ac, char *av[])
             if (optparse_hasopt (p, "blobref")) {
                 printf ("%s\n", json_string_value (entry));
             }
-            else if (optparse_hasopt (p, "raw")) {
+            else if (optparse_hasopt (p, "fileref")) {
                 if (json_dumpf (entry, stdout, JSON_COMPACT) < 0)
-                    log_msg_exit ("error dumping RFC 37 file system object");
+                    log_msg_exit ("error dumping fileref object");
             }
             else {
                 char buf[1024];
-                fileref_pretty_print (entry,
-                                      NULL,
-                                      long_form,
-                                      buf,
-                                      sizeof (buf));
+                fileref_pretty_print (entry, long_form, buf, sizeof (buf));
                 printf ("%s\n", buf);
             }
         }
@@ -420,12 +394,12 @@ static void extract_file (flux_t *h,
 {
     int verbose = optparse_get_int (p, "verbose", 0);
     const char *path;
+    json_int_t size;
+    json_int_t ctime;
+    json_int_t mtime;
     int mode;
-    json_int_t size = -1;
-    json_int_t ctime = -1;
-    json_int_t mtime = -1;
-    const char *encoding = NULL;
-    json_t *data = NULL;
+    json_t *blobvec;
+    const char *data = NULL;
     size_t index;
     json_t *o;
     struct archive_entry *entry;
@@ -434,14 +408,14 @@ static void extract_file (flux_t *h,
     if (json_unpack_ex (fileref,
                         &error,
                         0,
-                        "{s:s s:i s?I s?I s?I s?s s?o}",
+                        "{s:s s:I s:I s:I s:i s?s s:o}",
                         "path", &path,
-                        "mode", &mode,
                         "size", &size,
                         "mtime", &mtime,
                         "ctime", &ctime,
-                        "encoding", &encoding,
-                        "data", &data) < 0)
+                        "mode", &mode,
+                        "data", &data,
+                        "blobvec", &blobvec) < 0)
         log_msg_exit ("error decoding fileref object: %s", error.text);
 
     if (verbose > 0)
@@ -453,19 +427,15 @@ static void extract_file (flux_t *h,
         log_msg_exit ("%s: error creating libarchive entry", path);
     archive_entry_set_pathname (entry, path);
     archive_entry_set_mode (entry, mode);
-    if (mtime != -1)
-        archive_entry_set_mtime (entry, mtime, 0);
-    if (ctime != -1)
-        archive_entry_set_ctime (entry, ctime, 0);
+    archive_entry_set_mtime (entry, mtime, 0);
+    archive_entry_set_ctime (entry, ctime, 0);
     if (S_ISREG (mode)) {
-        if (size != -1)
-            archive_entry_set_size (entry, size);
+        archive_entry_set_size (entry, size);
     }
     else if (S_ISLNK (mode)) {
-        const char *target;
-        if (!data || !(target = json_string_value (data)))
+        if (!data)
             log_msg_exit ("%s: missing symlink data", path);
-        archive_entry_set_symlink (entry, target);
+        archive_entry_set_symlink (entry, data);
     }
     else if (!S_ISDIR (mode)) // nothing to do for directory
         log_msg_exit ("%s: unknown file type (mode=0%o)", path, mode);
@@ -474,28 +444,13 @@ static void extract_file (flux_t *h,
 
     /* data
      */
-    if (S_ISREG (mode) && data != NULL) {
-        if (!encoding) {
-          char *str;
-            if (!(str = json_dumps (data, JSON_ENCODE_ANY | JSON_COMPACT)))
-                log_msg_exit ("%s: could not encode JSON file data", path);
-            if (archive_write_data_block (archive,
-                                          str,
-                                          strlen (str),
-                                          0) != ARCHIVE_OK) {
-                log_msg_exit ("%s: write: %s",
-                              path,
-                              archive_error_string (archive));
-            }
-            free (str);
-        }
-        else if (streq (encoding, "base64")) {
-            const char *str = json_string_value (data);
+    if (S_ISREG (mode)) {
+        if (data) { // small file is contained in fileref.data
             void *buf;
             size_t buf_size;
 
-            if (!str || decode_data (str, &buf, &buf_size) < 0)
-                log_msg_exit ("%s: could not decode base64 file data", path);
+            if (decode_data (data, &buf, &buf_size) < 0)
+                log_msg_exit ("%s: could not decode file data", path);
             if (archive_write_data_block (archive,
                                           buf,
                                           buf_size,
@@ -506,26 +461,10 @@ static void extract_file (flux_t *h,
             }
             free (buf);
         }
-        else if (streq (encoding, "blobvec")) {
-            json_array_foreach (data, index, o) {
+        else { // large file is spread over multiple blobrefs
+            json_array_foreach (blobvec, index, o) {
                 extract_blob (h, archive, path, o);
             }
-        }
-        else if (streq (encoding, "utf-8")) {
-            const char *str = json_string_value (data);
-            if (!str)
-                log_msg_exit ("%s: unexpected data type for utf8", path);
-            if (archive_write_data_block (archive,
-                                          str,
-                                          strlen (str),
-                                          0) != ARCHIVE_OK) {
-                log_msg_exit ("%s: write: %s",
-                              path,
-                              archive_error_string (archive));
-            }
-        }
-        else {
-            log_msg_exit ("%s: unknown RFC 37 encoding %s", path, encoding);
         }
     }
 
@@ -612,11 +551,6 @@ static struct optparse_option map_opts[] = {
     { .name = "chunksize", .has_arg = 1, .arginfo = "N",
       .usage = "Limit blob size to N bytes with 0=unlimited"
                " (default 1048576)", },
-    { .name = "small-file-threshold", .has_arg = 1, .arginfo = "N",
-      .usage = "Adjust the maximum size of a \"small file\" in bytes"
-               " (default 4096)", },
-    { .name = "disable-mmap", .has_arg = 0,
-      .usage = "Never mmap(2) files into the content cache", },
     { .name = "tags", .key = 'T', .has_arg = 1, .arginfo = "NAME,...",
       .flags = OPTPARSE_OPT_AUTOSPLIT,
       .usage = "Specify comma-separated tags (default: main)", },
@@ -635,8 +569,8 @@ static struct optparse_option list_opts[] = {
       .usage = "Show file type, mode, size", },
     { .name = "blobref", .has_arg = 0,
       .usage = "List blobrefs only, do not dereference them", },
-    { .name = "raw", .has_arg = 0,
-      .usage = "Show raw RFC 37 file system object without decoding", },
+    { .name = "fileref", .has_arg = 0,
+      .usage = "Show raw fileref without decoding", },
     { .name = "tags", .key = 'T', .has_arg = 1, .arginfo = "NAME,...",
       .flags = OPTPARSE_OPT_AUTOSPLIT,
       .usage = "Specify comma-separated tags (default: main)", },

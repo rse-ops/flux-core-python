@@ -104,8 +104,8 @@ check_PROGRAMS = shmem/backtoback.t$(EXEEXT) loop/logstderr$(EXEEXT) \
 	request/treq$(EXEEXT) request/rpc$(EXEEXT) \
 	request/rpc_stream$(EXEEXT) barrier/tbarrier$(EXEEXT) \
 	reactor/reactorcat$(EXEEXT) rexec/rexec$(EXEEXT) \
-	rexec/rexec_count_stdout$(EXEEXT) rexec/rexec_getline$(EXEEXT) \
-	job-manager/list-jobs$(EXEEXT) \
+	rexec/rexec_ps$(EXEEXT) rexec/rexec_count_stdout$(EXEEXT) \
+	rexec/rexec_getline$(EXEEXT) job-manager/list-jobs$(EXEEXT) \
 	job-manager/print-constants$(EXEEXT) \
 	job-manager/events_journal_stream$(EXEEXT) \
 	ingest/submitbench$(EXEEXT) sched-simple/jj-reader$(EXEEXT) \
@@ -822,6 +822,13 @@ rexec_rexec_getline_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(rexec_rexec_getline_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am_rexec_rexec_ps_OBJECTS = rexec/rexec_rexec_ps-rexec_ps.$(OBJEXT)
+rexec_rexec_ps_OBJECTS = $(am_rexec_rexec_ps_OBJECTS)
+rexec_rexec_ps_DEPENDENCIES = $(am__DEPENDENCIES_2)
+rexec_rexec_ps_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(rexec_rexec_ps_LDFLAGS) $(LDFLAGS) -o \
+	$@
 am_sched_simple_jj_reader_OBJECTS =  \
 	sched-simple/sched_simple_jj_reader-jj-reader.$(OBJEXT)
 sched_simple_jj_reader_OBJECTS = $(am_sched_simple_jj_reader_OBJECTS)
@@ -901,19 +908,19 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t0012-content-sqlite.t t0024-content-s3.t \
 	t0028-content-backing-none.t t0029-filemap-cmd.t \
 	t0030-marshall.t t0031-constraint-parser.t \
-	t0032-directives-parser.t t0025-broker-state-machine.t \
-	t0027-broker-groups.t t0013-config-file.t t0014-runlevel.t \
-	t0015-cron.t t0016-cron-faketime.t t0017-security.t \
-	t0018-content-files.t t0019-jobspec-schema.t t0020-terminus.t \
-	t0022-jj-reader.t t0023-jobspec1-validate.t t0026-flux-R.t \
-	t1000-kvs.t t1001-kvs-internals.t t1003-kvs-stress.t \
-	t1004-kvs-namespace.t t1005-kvs-security.t \
-	t1007-kvs-lookup-watch.t t1008-kvs-eventlog.t t1009-kvs-copy.t \
-	t1010-kvs-commit-sync.t t1011-kvs-checkpoint-period.t \
-	t1101-barrier-basic.t t1102-cmddriver.t t1103-apidisconnect.t \
-	t1105-proxy.t t1106-ssh-connector.t t1107-heartbeat.t \
-	t1108-local-opt.t t1200-stats-basic.t t2004-hydra.t \
-	t2007-caliper.t t2008-althash.t t2010-kvs-snapshot-restore.t \
+	t0025-broker-state-machine.t t0027-broker-groups.t \
+	t0013-config-file.t t0014-runlevel.t t0015-cron.t \
+	t0016-cron-faketime.t t0017-security.t t0018-content-files.t \
+	t0019-jobspec-schema.t t0020-terminus.t t0022-jj-reader.t \
+	t0023-jobspec1-validate.t t0026-flux-R.t t1000-kvs.t \
+	t1001-kvs-internals.t t1003-kvs-stress.t t1004-kvs-namespace.t \
+	t1005-kvs-security.t t1007-kvs-lookup-watch.t \
+	t1008-kvs-eventlog.t t1009-kvs-copy.t t1010-kvs-commit-sync.t \
+	t1011-kvs-checkpoint-period.t t1101-barrier-basic.t \
+	t1102-cmddriver.t t1103-apidisconnect.t t1105-proxy.t \
+	t1106-ssh-connector.t t1107-heartbeat.t t1108-local-opt.t \
+	t1200-stats-basic.t t2004-hydra.t t2007-caliper.t \
+	t2008-althash.t t2010-kvs-snapshot-restore.t \
 	t2100-job-ingest.t t2110-job-ingest-validator.t \
 	t2111-job-ingest-config.t t2112-job-ingest-frobnicator.t \
 	t2113-job-ingest-pipeline.t t2201-job-cmd.t \
@@ -960,10 +967,7 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
 	t2616-job-shell-taskmap.t t2617-job-shell-stage-in.t \
 	t2700-mini-cmd.t t2701-mini-batch.t t2702-mini-alloc.t \
-	t2703-mini-bulksubmit.t t2710-python-cli-submit.t \
-	t2711-python-cli-run.t t2712-python-cli-alloc.t \
-	t2713-python-cli-bulksubmit.t t2714-python-cli-batch.t \
-	t2715-python-cli-cancel.t t2800-jobs-cmd.t \
+	t2703-mini-bulksubmit.t t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t t2800-jobs-instance-info.t \
 	t2800-jobs-config.t t2801-top-cmd.t t2802-uri-cmd.t \
 	t2803-flux-pstree.t t2804-uptime-cmd.t t2805-startlog-cmd.t \
@@ -1028,12 +1032,11 @@ am__dist_check_SCRIPTS_DIST = t9000-system.t t5000-valgrind.t \
 	scripts/t0004-event-helper.sh scripts/tssh scripts/sign-as.py \
 	scripts/runpty.py scripts/dmesg-grep.py \
 	scripts/stats-listen.py scripts/sqlite-query.py \
-	scripts/pipe.py valgrind/valgrind-workload.sh \
-	valgrind/workload.d/job content/content-helper.sh \
-	kvs/kvs-helper.sh kvs/change-checkpoint.py \
-	job-manager/exec-service.lua job-manager/drain-cancel.py \
-	job-manager/bulk-state.py job-manager/submit-wait.py \
-	job-manager/submit-waitany.py \
+	valgrind/valgrind-workload.sh valgrind/workload.d/job \
+	content/content-helper.sh kvs/kvs-helper.sh \
+	kvs/change-checkpoint.py job-manager/exec-service.lua \
+	job-manager/drain-cancel.py job-manager/bulk-state.py \
+	job-manager/submit-wait.py job-manager/submit-waitany.py \
 	job-manager/submit-sliding-window.py \
 	job-manager/wait-interrupted.py job-manager/sched-helper.sh \
 	job-manager/job-conv.py job-attach/outputsleep.sh \
@@ -1161,7 +1164,7 @@ SOURCES = $(disconnect_watcher_la_SOURCES) \
 	$(reactor_reactorcat_SOURCES) $(request_rpc_SOURCES) \
 	$(request_rpc_stream_SOURCES) $(request_treq_SOURCES) \
 	$(rexec_rexec_SOURCES) $(rexec_rexec_count_stdout_SOURCES) \
-	$(rexec_rexec_getline_SOURCES) \
+	$(rexec_rexec_getline_SOURCES) $(rexec_rexec_ps_SOURCES) \
 	$(sched_simple_jj_reader_SOURCES) \
 	$(sdprocess_job_signal_exit_SOURCES) \
 	$(sdprocess_sim_broker_SOURCES) $(shell_lptest_SOURCES) \
@@ -1225,7 +1228,7 @@ DIST_SOURCES = $(disconnect_watcher_la_SOURCES) \
 	$(reactor_reactorcat_SOURCES) $(request_rpc_SOURCES) \
 	$(request_rpc_stream_SOURCES) $(request_treq_SOURCES) \
 	$(rexec_rexec_SOURCES) $(rexec_rexec_count_stdout_SOURCES) \
-	$(rexec_rexec_getline_SOURCES) \
+	$(rexec_rexec_getline_SOURCES) $(rexec_rexec_ps_SOURCES) \
 	$(sched_simple_jj_reader_SOURCES) \
 	$(sdprocess_job_signal_exit_SOURCES) \
 	$(sdprocess_sim_broker_SOURCES) $(shell_lptest_SOURCES) \
@@ -1736,19 +1739,19 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	t0012-content-sqlite.t t0024-content-s3.t \
 	t0028-content-backing-none.t t0029-filemap-cmd.t \
 	t0030-marshall.t t0031-constraint-parser.t \
-	t0032-directives-parser.t t0025-broker-state-machine.t \
-	t0027-broker-groups.t t0013-config-file.t t0014-runlevel.t \
-	t0015-cron.t t0016-cron-faketime.t t0017-security.t \
-	t0018-content-files.t t0019-jobspec-schema.t t0020-terminus.t \
-	t0022-jj-reader.t t0023-jobspec1-validate.t t0026-flux-R.t \
-	t1000-kvs.t t1001-kvs-internals.t t1003-kvs-stress.t \
-	t1004-kvs-namespace.t t1005-kvs-security.t \
-	t1007-kvs-lookup-watch.t t1008-kvs-eventlog.t t1009-kvs-copy.t \
-	t1010-kvs-commit-sync.t t1011-kvs-checkpoint-period.t \
-	t1101-barrier-basic.t t1102-cmddriver.t t1103-apidisconnect.t \
-	t1105-proxy.t t1106-ssh-connector.t t1107-heartbeat.t \
-	t1108-local-opt.t t1200-stats-basic.t t2004-hydra.t \
-	t2007-caliper.t t2008-althash.t t2010-kvs-snapshot-restore.t \
+	t0025-broker-state-machine.t t0027-broker-groups.t \
+	t0013-config-file.t t0014-runlevel.t t0015-cron.t \
+	t0016-cron-faketime.t t0017-security.t t0018-content-files.t \
+	t0019-jobspec-schema.t t0020-terminus.t t0022-jj-reader.t \
+	t0023-jobspec1-validate.t t0026-flux-R.t t1000-kvs.t \
+	t1001-kvs-internals.t t1003-kvs-stress.t t1004-kvs-namespace.t \
+	t1005-kvs-security.t t1007-kvs-lookup-watch.t \
+	t1008-kvs-eventlog.t t1009-kvs-copy.t t1010-kvs-commit-sync.t \
+	t1011-kvs-checkpoint-period.t t1101-barrier-basic.t \
+	t1102-cmddriver.t t1103-apidisconnect.t t1105-proxy.t \
+	t1106-ssh-connector.t t1107-heartbeat.t t1108-local-opt.t \
+	t1200-stats-basic.t t2004-hydra.t t2007-caliper.t \
+	t2008-althash.t t2010-kvs-snapshot-restore.t \
 	t2100-job-ingest.t t2110-job-ingest-validator.t \
 	t2111-job-ingest-config.t t2112-job-ingest-frobnicator.t \
 	t2113-job-ingest-pipeline.t t2201-job-cmd.t \
@@ -1795,10 +1798,7 @@ TESTSCRIPTS = $(LONGTESTSCRIPTS) t0000-sharness.t t0001-basic.t \
 	t2614-job-shell-doom.t t2615-job-shell-rlimit.t \
 	t2616-job-shell-taskmap.t t2617-job-shell-stage-in.t \
 	t2700-mini-cmd.t t2701-mini-batch.t t2702-mini-alloc.t \
-	t2703-mini-bulksubmit.t t2710-python-cli-submit.t \
-	t2711-python-cli-run.t t2712-python-cli-alloc.t \
-	t2713-python-cli-bulksubmit.t t2714-python-cli-batch.t \
-	t2715-python-cli-cancel.t t2800-jobs-cmd.t \
+	t2703-mini-bulksubmit.t t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t t2800-jobs-instance-info.t \
 	t2800-jobs-config.t t2801-top-cmd.t t2802-uri-cmd.t \
 	t2803-flux-pstree.t t2804-uptime-cmd.t t2805-startlog-cmd.t \
@@ -1844,10 +1844,8 @@ EXTRA_DIST = \
 	scripts/run_timeout.py \
 	scripts/startctl.py \
 	scripts/groups.py \
-	scripts/rexec.py \
 	jobspec \
 	marshall \
-	batch \
 	job-manager/dumps \
 	flux-resource \
 	resource/get-xml-test.py
@@ -1904,7 +1902,6 @@ dist_check_SCRIPTS = \
 	scripts/dmesg-grep.py \
 	scripts/stats-listen.py \
 	scripts/sqlite-query.py \
-	scripts/pipe.py \
 	valgrind/valgrind-workload.sh \
 	valgrind/workload.d/job \
 	content/content-helper.sh \
@@ -2169,6 +2166,10 @@ rexec_rexec_SOURCES = rexec/rexec.c
 rexec_rexec_CPPFLAGS = $(test_cppflags)
 rexec_rexec_LDADD = $(test_ldadd)
 rexec_rexec_LDFLAGS = $(test_ldflags)
+rexec_rexec_ps_SOURCES = rexec/rexec_ps.c
+rexec_rexec_ps_CPPFLAGS = $(test_cppflags)
+rexec_rexec_ps_LDADD = $(test_ldadd)
+rexec_rexec_ps_LDFLAGS = $(test_ldflags)
 rexec_rexec_count_stdout_SOURCES = rexec/rexec_count_stdout.c
 rexec_rexec_count_stdout_CPPFLAGS = $(test_cppflags)
 rexec_rexec_count_stdout_LDADD = $(test_ldadd)
@@ -3130,6 +3131,12 @@ rexec/rexec_rexec_getline-rexec_getline.$(OBJEXT):  \
 rexec/rexec_getline$(EXEEXT): $(rexec_rexec_getline_OBJECTS) $(rexec_rexec_getline_DEPENDENCIES) $(EXTRA_rexec_rexec_getline_DEPENDENCIES) rexec/$(am__dirstamp)
 	@rm -f rexec/rexec_getline$(EXEEXT)
 	$(AM_V_CCLD)$(rexec_rexec_getline_LINK) $(rexec_rexec_getline_OBJECTS) $(rexec_rexec_getline_LDADD) $(LIBS)
+rexec/rexec_rexec_ps-rexec_ps.$(OBJEXT): rexec/$(am__dirstamp) \
+	rexec/$(DEPDIR)/$(am__dirstamp)
+
+rexec/rexec_ps$(EXEEXT): $(rexec_rexec_ps_OBJECTS) $(rexec_rexec_ps_DEPENDENCIES) $(EXTRA_rexec_rexec_ps_DEPENDENCIES) rexec/$(am__dirstamp)
+	@rm -f rexec/rexec_ps$(EXEEXT)
+	$(AM_V_CCLD)$(rexec_rexec_ps_LINK) $(rexec_rexec_ps_OBJECTS) $(rexec_rexec_ps_LDADD) $(LIBS)
 sched-simple/$(am__dirstamp):
 	@$(MKDIR_P) sched-simple
 	@: > sched-simple/$(am__dirstamp)
@@ -3359,6 +3366,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec-rexec.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_count_stdout-rexec_count_stdout.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_getline-rexec_getline.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sdprocess/$(DEPDIR)/sdprocess_job_signal_exit-job-signal-exit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sdprocess/$(DEPDIR)/sdprocess_sim_broker-sim-broker.Po@am__quote@
@@ -4272,6 +4280,20 @@ rexec/rexec_rexec_getline-rexec_getline.obj: rexec/rexec_getline.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rexec/rexec_getline.c' object='rexec/rexec_rexec_getline-rexec_getline.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_getline_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_getline-rexec_getline.obj `if test -f 'rexec/rexec_getline.c'; then $(CYGPATH_W) 'rexec/rexec_getline.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_getline.c'; fi`
+
+rexec/rexec_rexec_ps-rexec_ps.o: rexec/rexec_ps.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rexec/rexec_rexec_ps-rexec_ps.o -MD -MP -MF rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo -c -o rexec/rexec_rexec_ps-rexec_ps.o `test -f 'rexec/rexec_ps.c' || echo '$(srcdir)/'`rexec/rexec_ps.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rexec/rexec_ps.c' object='rexec/rexec_rexec_ps-rexec_ps.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_ps-rexec_ps.o `test -f 'rexec/rexec_ps.c' || echo '$(srcdir)/'`rexec/rexec_ps.c
+
+rexec/rexec_rexec_ps-rexec_ps.obj: rexec/rexec_ps.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT rexec/rexec_rexec_ps-rexec_ps.obj -MD -MP -MF rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo -c -o rexec/rexec_rexec_ps-rexec_ps.obj `if test -f 'rexec/rexec_ps.c'; then $(CYGPATH_W) 'rexec/rexec_ps.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_ps.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Tpo rexec/$(DEPDIR)/rexec_rexec_ps-rexec_ps.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='rexec/rexec_ps.c' object='rexec/rexec_rexec_ps-rexec_ps.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(rexec_rexec_ps_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o rexec/rexec_rexec_ps-rexec_ps.obj `if test -f 'rexec/rexec_ps.c'; then $(CYGPATH_W) 'rexec/rexec_ps.c'; else $(CYGPATH_W) '$(srcdir)/rexec/rexec_ps.c'; fi`
 
 sched-simple/sched_simple_jj_reader-jj-reader.o: sched-simple/jj-reader.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(sched_simple_jj_reader_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT sched-simple/sched_simple_jj_reader-jj-reader.o -MD -MP -MF sched-simple/$(DEPDIR)/sched_simple_jj_reader-jj-reader.Tpo -c -o sched-simple/sched_simple_jj_reader-jj-reader.o `test -f 'sched-simple/jj-reader.c' || echo '$(srcdir)/'`sched-simple/jj-reader.c

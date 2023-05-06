@@ -1,5 +1,4 @@
-.. flux-help-description: display running Flux jobs
-.. flux-help-section: jobs
+.. flux-help-description: Display Running Flux Jobs
 
 ===========
 flux-top(1)

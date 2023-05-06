@@ -66,17 +66,6 @@ void flux_log_set_redirect (flux_t *h, flux_log_f fun, void *arg);
  */
 const char *flux_strerror (int errnum);
 
-/* Flux log function compatible with libutil llog interface
- */
-void flux_llog (void *arg,
-                const char *file,
-                int line,
-                const char *func,
-                const char *subsys,
-                int level,
-                const char *fmt,
-                va_list ap);
-
 #ifdef __cplusplus
 }
 #endif

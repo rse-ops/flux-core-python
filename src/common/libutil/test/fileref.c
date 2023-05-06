@@ -32,35 +32,6 @@ static char testdir[1024];
 
 static bool have_sparse;
 
-static json_t *xfileref_create_vec (const char *path,
-                                    const char *hashtype,
-                                    int chunksize)
-{
-    json_t *o;
-    flux_error_t error;
-    struct blobvec_param blobvec_param = {
-        .hashtype = hashtype,
-        .chunksize = chunksize,
-        .small_file_threshold = 4096,
-    };
-
-    o = fileref_create_ex (path, NULL, &blobvec_param, NULL, &error);
-    if (!o)
-        diag ("%s", error.text);
-    return o;
-}
-
-static json_t *xfileref_create (const char *path)
-{
-    json_t *o;
-    flux_error_t error;
-
-    o = fileref_create (path, &error);
-    if (!o)
-        diag ("%s", error.text);
-    return o;
-}
-
 const char *mkpath (const char *name)
 {
     static char tmppath[2048];
@@ -140,26 +111,6 @@ void mkfile (const char *name, int blocksize, const char *spec)
     free (buf);
 }
 
-void mkfile_string (const char *name, const char *s)
-{
-    int fd;
-    if ((fd = open (mkpath (name), O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0
-        || write (fd, s, strlen (s)) != strlen (s)
-        || close (fd) < 0)
-        BAIL_OUT ("could not create %s: %s", strerror (errno));
-    close (fd);
-}
-
-void mkfile_empty (const char *name, size_t size)
-{
-    int fd;
-    if ((fd = open (mkpath (name), O_WRONLY | O_CREAT | O_TRUNC, 0600)) < 0
-        || ftruncate (fd, size) < 0
-        || close (fd) < 0)
-        BAIL_OUT ("could not create %s: %s", strerror (errno));
-    close (fd);
-}
-
 /* Check that blobref 'bref' hash matches specified file region.
  * If bref is NULL, check that the region contains all zeroes.
  */
@@ -216,31 +167,41 @@ error:
  */
 bool check_fileref (json_t *fileref, const char *name, int blobcount)
 {
+    int version;
+    const char *type;
     const char *path;
+    json_int_t size;
+    json_int_t mtime;
+    json_int_t ctime;
     int mode;
-    json_int_t size = -1;
-    json_int_t mtime = -1;
-    json_int_t ctime = -1;
-    const char *encoding = NULL;
-    json_t *data = NULL;
+    json_t *blobvec;
     struct stat sb;
-    int myblobcount = 0;
+    const char *data = NULL;
 
     if (!fileref) {
         diag ("fileref is NULL");
         return false;
     }
     if (json_unpack (fileref,
-                     "{s:s s:i s?I s?I s?I s?s s?o}",
+                     "{s:i s:s s:s s:I s:I s:I s:i s?s s:o}",
+                     "version", &version,
+                     "type", &type,
                      "path", &path,
-                     "mode", &mode,
                      "size", &size,
                      "mtime", &mtime,
                      "ctime", &ctime,
-                     "encoding", &encoding,
-                     "data", &data) < 0) {
-
+                     "mode", &mode,
+                     "data", &data,
+                     "blobvec", &blobvec) < 0) {
         diag ("error decoding fileref object");
+        return false;
+    }
+    if (version != 1) {
+        diag ("fileref.version != 1");
+        return false;
+    }
+    if (!streq (type, "fileref")) {
+        diag ("fileref.type != fileref");
         return false;
     }
     if (!streq (path, mkpath_relative (name))) {
@@ -249,15 +210,15 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
     }
     if (lstat (mkpath (name), &sb) < 0)
         BAIL_OUT ("could not stat %s", path);
-    if (size != -1 && size != sb.st_size) {
+    if (size != sb.st_size) {
         diag ("fileref.size is %ju not %zu", (uintmax_t)size, sb.st_size);
         goto error;
     }
-    if (mtime != -1 && mtime != sb.st_mtime) {
+    if (mtime != sb.st_mtime) {
         diag ("fileref.mtime is wrong");
         goto error;
     }
-    if (ctime != -1 && ctime != sb.st_ctime) {
+    if (ctime != sb.st_ctime) {
         diag ("fileref.ctime is wrong");
         goto error;
     }
@@ -271,44 +232,19 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
     }
     if (S_ISLNK (mode)) {
         char buf[1024];
-        if (!data || !json_is_string (data)) {
+        if (!data) {
             diag ("symlink data is missing");
             goto error;
         }
-        if (encoding || size != -1) {
-            diag ("symlink encoding/size unexpectedly set");
-            goto error;
-        }
         if (readlink (mkpath (name), buf, sizeof (buf)) < 0
-            || !streq (buf, json_string_value (data))) {
+            || !streq (buf, data)) {
             diag ("symlink target is wrong");
             goto error;
         }
     }
     else if (S_ISREG (mode)) {
-        if (!encoding) { // json encoding
-        }
-        else if (streq (encoding, "utf-8")) {
-            if (!json_is_string (data)) {
-                diag ("regfile utf-8 data is not a string");
-                goto error;
-            }
-        }
-        else if (streq (encoding, "base64")) {
-            if (!json_is_string (data)) {
-                diag ("regfile base64 data is not a string");
-                goto error;
-            }
-        }
-        else if (streq (encoding, "blobvec")) {
-            if (!json_is_array (data)) {
-                diag ("regfile blobvec data is not an array");
-                goto error;
-            }
-            myblobcount = json_array_size (data);
-        }
-        else {
-            diag ("unknown encoding %s", encoding);
+        if (data && json_array_size (blobvec) > 0) {
+            diag ("regular file has both data and blobrefs");
             goto error;
         }
     }
@@ -318,9 +254,9 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
             goto error;
         }
     }
-    if (myblobcount != blobcount) {
+    if (json_array_size (blobvec) != blobcount) {
         diag ("fileref.blobvec has incorrect length (expected %d got %zu)",
-              blobcount, myblobcount);
+              blobcount, json_array_size (blobvec));
         goto error;
     }
     if (blobcount > 0) {
@@ -334,7 +270,7 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
             return false;
         }
         cursor = 0;
-        json_array_foreach (data, index, o) {
+        json_array_foreach (blobvec, index, o) {
             struct {
                 json_int_t offset;
                 json_int_t size;
@@ -373,16 +309,13 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
         }
         close (fd);
     }
-    else if (S_ISREG (mode) && data != NULL && encoding
-        && streq (encoding, "base64")) {
-        const char *str = json_string_value (data);
+    else if (S_ISREG (mode) && data != NULL) {
         int fd;
         char buf[8192];
         char buf2[8192];
         ssize_t n;
 
-        if (!str
-            || (n = base64_decode (buf, sizeof (buf), str, strlen (str))) < 0) {
+        if ((n = base64_decode (buf, sizeof (buf), data, strlen (data))) < 0) {
             diag ("base64_decode failed");
             goto error;
         }
@@ -396,29 +329,6 @@ bool check_fileref (json_t *fileref, const char *name, int blobcount)
             goto error;
         }
         if (memcmp (buf, buf2, n) != 0) {
-            diag ("%s: data is wrong", path);
-            close (fd);
-            goto error;
-        }
-        close (fd);
-    }
-    else if (S_ISREG (mode) && data != NULL
-        && encoding && streq (encoding, "utf-8")) {
-        const char *str = json_string_value (data);
-        ssize_t n = strlen (str);
-        int fd;
-        char buf[8192];
-
-        if ((fd = open (mkpath (name), O_RDONLY)) < 0) {
-            diag ("open %s: %s", path, strerror (errno));
-            goto error;
-        }
-        if (read (fd, buf, sizeof (buf)) != n) {
-            diag ("read %s: returned wrong size", path);
-            close (fd);
-            goto error;
-        }
-        if (memcmp (str, buf, n) != 0) {
             diag ("%s: data is wrong", path);
             close (fd);
             goto error;
@@ -440,10 +350,10 @@ int blobcount (json_t *fileref)
 
 void diagjson (json_t *o)
 {
-    char *s = NULL;
-    if (o)
-        s = json_dumps (o, JSON_INDENT(2));
-    diag ("%s", s ? s : "(NULL)");
+    char *s;
+    s = json_dumps (o, JSON_INDENT(2));
+    if (s)
+        diag ("%s", s);
     free (s);
 }
 
@@ -474,15 +384,17 @@ void test_vec (void)
 {
     for (int i = 0; i < ARRAY_SIZE (testvec); i++) {
         json_t *o;
+        flux_error_t error;
         bool rc;
 
         skip (strchr (testvec[i].spec, '-') && !have_sparse,
               1, "test directory does not support sparse files");
 
         mkfile ("testfile", 4096, testvec[i].spec);
-        o = xfileref_create_vec (mkpath ("testfile"),
-                             testvec[i].hashtype,
-                             testvec[i].chunksize);
+        o = fileref_create (mkpath ("testfile"),
+                           testvec[i].hashtype,
+                           testvec[i].chunksize,
+                           &error);
         rc = check_fileref (o, "testfile", testvec[i].exp_blobs);
         ok (rc == true,
             "fileref_create chunksize=%d '%s' works (%d %s blobrefs)",
@@ -490,6 +402,8 @@ void test_vec (void)
             testvec[i].spec,
             testvec[i].exp_blobs,
             testvec[i].hashtype);
+        if (!rc)
+            diag ("%s", error.text);
         json_decref (o);
         rmfile ("testfile");
 
@@ -500,15 +414,17 @@ void test_vec (void)
 void test_dir (void)
 {
     json_t *o;
+    flux_error_t error;
     bool rc;
 
     if (mkdir (mkpath ("testdir"), 0510) < 0)
         BAIL_OUT ("could not create test directory");
-    o = xfileref_create (mkpath ("testdir"));
-    diagjson (o);
+    o = fileref_create (mkpath ("testdir"), "sha1", 0, &error);
     rc = check_fileref (o, "testdir", 0);
     ok (rc == true,
         "fileref_create directory works");
+    if (!rc)
+        diag ("%s", error.text);
     json_decref (o);
     rmdir (mkpath ("testdir"));
 }
@@ -516,15 +432,18 @@ void test_dir (void)
 void test_link (void)
 {
     json_t *o;
+    flux_error_t error;
     const char *target = "/a/b/c/d/e/f/g";
     bool rc;
 
     if (symlink (target, mkpath ("testlink")) < 0)
         BAIL_OUT ("could not create test symlink");
-    o = xfileref_create (mkpath ("testlink"));
+    o = fileref_create (mkpath ("testlink"), "sha1", 0, &error);
     rc = check_fileref (o, "testlink", 0);
     ok (rc == true,
         "fileref_create symlink works");
+    if (!rc)
+        diag ("%s", error.text);
     json_decref (o);
     rmfile ("testlink");
 }
@@ -532,120 +451,55 @@ void test_link (void)
 void test_small (void)
 {
     json_t *o;
+    flux_error_t error;
     bool rc;
-    const char *encoding;
 
     mkfile ("testsmall", 512, "a");
-    o = xfileref_create_vec (mkpath ("testsmall"), "sha1", 0);
+    o = fileref_create (mkpath ("testsmall"), "sha1", 0, &error);
     rc = check_fileref (o, "testsmall", 0);
     ok (rc == true,
         "fileref_create small file works");
+    if (!rc)
+        diag ("%s", error.text);
     diagjson (o);
     json_decref (o);
     rmfile ("testsmall");
-
-    mkfile_string ("testsmall2", "\xc3\x28");
-    o = xfileref_create (mkpath ("testsmall2"));
-    ok (o != NULL && json_unpack (o, "{s:s}", "encoding", &encoding) == 0
-        && streq (encoding, "base64"),
-        "small file with invalid utf-8 encodes as base64");
-    diagjson (o);
-    json_decref (o);
-    rmfile ("testsmall2");
-
-    mkfile_string ("testsmall3", "abcd");
-    o = xfileref_create (mkpath ("testsmall3"));
-    ok (o != NULL && json_unpack (o, "{s:s}", "encoding", &encoding) == 0
-        && streq (encoding, "utf-8"),
-        "small file with valid utf-8 encodes as utf-8");
-    diagjson (o);
-    json_decref (o);
-    rmfile ("testsmall3");
-}
-
-void test_empty (void)
-{
-    json_t *o;
-    json_int_t size;
-
-    mkfile_empty ("testempty", 0);
-    o = xfileref_create (mkpath ("testempty"));
-    ok (o != NULL && json_object_get (o, "data") == NULL,
-        "empty file has no data member");
-    ok (o != NULL && json_object_get (o, "encoding") == NULL,
-        "empty file has no encoding member");
-    ok (o != NULL && json_unpack (o, "{s:I}", "size", &size) == 0
-            && size == 0,
-        "empty file has size member set to zero");
-    diagjson (o);
-    json_decref (o);
-    rmfile ("testempty");
-
-    mkfile_empty ("testempty2", 1024);
-    o = xfileref_create (mkpath ("testempty2"));
-    ok (o != NULL && json_object_get (o, "data") == NULL,
-        "sparse,empty file has no data member");
-    ok (o != NULL && json_object_get (o, "encoding") == NULL,
-        "sparse,empty file has no encoding member");
-    ok (o != NULL && json_unpack (o, "{s:I}", "size", &size) == 0
-            && size == 1024,
-        "sparse,empty file has size member set to expected size");
-    diagjson (o);
-    json_decref (o);
-    rmfile ("testempty2");
 }
 
 void test_expfail (void)
 {
     json_t *o;
     flux_error_t error;
-    struct blobvec_param param;
 
     mkfile ("test", 4096, "zz");
 
     errno = 0;
-    o = fileref_create ("/noexist", &error);
-    if (!o)
-        diag ("%s", error.text);
+    o = fileref_create ("/noexist", "sha1", 4096, &error);
     ok (o == NULL && errno == ENOENT,
         "fileref_create path=/noexist fails with ENOENT");
-
-    errno = 0;
-    o = fileref_create ("/dev/null", &error);
     if (!o)
         diag ("%s", error.text);
+
+    errno = 0;
+    o = fileref_create ("/dev/null", "sha1", 4096, &error);
     ok (o == NULL && errno == EINVAL,
         "fileref_create path=/dev/null fails with EINVAL");
-
-    errno = 0;
-    param.chunksize = 1024;
-    param.hashtype = "smurfette";
-    param.small_file_threshold = 0;
-    o = fileref_create_ex (mkpath ("test"), NULL, &param, NULL, &error);
     if (!o)
         diag ("%s", error.text);
-    ok (o == NULL && errno == EINVAL,
-        "fileref_create_ex param.hashtype=smurfette fails with EINVAL");
 
     errno = 0;
-    param.chunksize = -1;
-    param.hashtype = "sha1";
-    param.small_file_threshold = 0;
-    o = fileref_create_ex (mkpath ("test"), NULL, &param, NULL, &error);
+    o = fileref_create (mkpath ("test"), "smurfette", 4096, &error);
+    ok (o == NULL && errno == EINVAL,
+        "fileref_create hashtype=smurfette fails with EINVAL");
     if (!o)
         diag ("%s", error.text);
-    ok (o == NULL && errno == EINVAL,
-        "fileref_create_ex param.chunksize=-1 fails with EINVAL");
 
     errno = 0;
-    param.chunksize = 1024;
-    param.hashtype = "sha1";
-    param.small_file_threshold = -1;
-    o = fileref_create_ex (mkpath ("test"), NULL, &param, NULL, &error);
+    o = fileref_create (mkpath ("test"), "sha1", -1, &error);
+    ok (o == NULL && errno == EINVAL,
+        "fileref_create chunksize=-1 fails with EINVAL");
     if (!o)
         diag ("%s", error.text);
-    ok (o == NULL && errno == EINVAL,
-        "fileref_create_ex param.small_file_threshold=-1 fails with EINVAL");
 
     rmfile ("test");
 }
@@ -656,32 +510,32 @@ void test_pretty_print (void)
     json_t *o;
 
     mkfile ("testfile", 4096, "a");
-    if (!(o = xfileref_create_vec (mkpath ("testfile"), "sha1", 0)))
+    if (!(o = fileref_create (mkpath ("testfile"), "sha1", 0, NULL)))
         BAIL_OUT ("failed to create test object");
 
     buf[0] = '\0';
-    fileref_pretty_print (NULL, NULL, false, buf, sizeof (buf));
+    fileref_pretty_print (NULL, false, buf, sizeof (buf));
     ok (streq (buf, "invalid fileref"),
         "fileref_pretty_print obj=NULL printed an error");
 
     buf[0] = '\0';
-    fileref_pretty_print (NULL, NULL, false, buf, 5);
+    fileref_pretty_print (NULL, false, buf, 5);
     ok (streq (buf, "inv+"),
         "fileref_pretty_print obj=NULL bufsize=5 includes trunc character +");
 
     buf[0] = '\0';
-    fileref_pretty_print (o, NULL, false, buf, sizeof (buf));
+    fileref_pretty_print (o, false, buf, sizeof (buf));
     ok (strlen (buf) > 0,
         "fileref_pretty_print long_form=false works");
     diag (buf);
 
     buf[0] = '\0';
-    fileref_pretty_print (o, NULL, true, buf, sizeof (buf));
+    fileref_pretty_print (o, true, buf, sizeof (buf));
     ok (strlen (buf) > 0,
         "fileref_pretty_print long_form=true works");
     diag (buf);
 
-    lives_ok ({fileref_pretty_print (o, NULL, true, NULL, sizeof (buf));},
+    lives_ok ({fileref_pretty_print (o, true, NULL, sizeof (buf));},
              "fileref_pretty_print buf=NULL doesn't crash");
 
     json_decref (o);
@@ -709,7 +563,6 @@ int main (int argc, char *argv[])
     test_dir ();
     test_link ();
     test_small ();
-    test_empty ();
     test_expfail ();
     test_pretty_print ();
 

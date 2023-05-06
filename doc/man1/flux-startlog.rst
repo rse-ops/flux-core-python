@@ -1,3 +1,5 @@
+.. flux-help-description: Show Flux instance start and stop times
+
 ================
 flux-startlog(1)
 ================

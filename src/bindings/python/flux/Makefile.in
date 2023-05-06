@@ -146,14 +146,12 @@ am__can_run_installinfo = \
   esac
 am__nobase_fluxpy_PYTHON_DIST = __init__.py kvs.py wrapper.py rpc.py \
 	message.py constants.py util.py future.py memoized_property.py \
-	debugged.py importer.py cli/__init__.py cli/base.py \
-	cli/alloc.py cli/batch.py cli/bulksubmit.py cli/run.py \
-	cli/submit.py cli/fortune.py core/__init__.py core/watchers.py \
+	debugged.py importer.py core/__init__.py core/watchers.py \
 	core/inner.py core/handle.py core/trampoline.py \
 	job/__init__.py job/JobID.py job/Jobspec.py job/event.py \
 	job/kill.py job/kvs.py job/list.py job/info.py job/wait.py \
 	job/submit.py job/timeleft.py job/stats.py job/_wrapper.py \
-	job/executor.py job/directives.py job/validator/__init__.py \
+	job/executor.py job/validator/__init__.py \
 	job/validator/validator.py job/validator/plugins/jobspec.py \
 	job/validator/plugins/schema.py \
 	job/validator/plugins/feasibility.py \
@@ -467,14 +465,12 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 nobase_fluxpy_PYTHON = __init__.py kvs.py wrapper.py rpc.py message.py \
 	constants.py util.py future.py memoized_property.py \
-	debugged.py importer.py cli/__init__.py cli/base.py \
-	cli/alloc.py cli/batch.py cli/bulksubmit.py cli/run.py \
-	cli/submit.py cli/fortune.py core/__init__.py core/watchers.py \
+	debugged.py importer.py core/__init__.py core/watchers.py \
 	core/inner.py core/handle.py core/trampoline.py \
 	job/__init__.py job/JobID.py job/Jobspec.py job/event.py \
 	job/kill.py job/kvs.py job/list.py job/info.py job/wait.py \
 	job/submit.py job/timeleft.py job/stats.py job/_wrapper.py \
-	job/executor.py job/directives.py job/validator/__init__.py \
+	job/executor.py job/validator/__init__.py \
 	job/validator/validator.py job/validator/plugins/jobspec.py \
 	job/validator/plugins/schema.py \
 	job/validator/plugins/feasibility.py \

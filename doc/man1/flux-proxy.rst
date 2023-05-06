@@ -1,6 +1,5 @@
 .. flux-help-command: proxy
-.. flux-help-description: proxy connections to Flux jobs and instances
-.. flux-help-section: jobs
+.. flux-help-description: Create proxy environment for Flux instance
 
 =============
 flux-proxy(1)

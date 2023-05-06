@@ -162,7 +162,6 @@ LTLIBRARIES = $(fluxmod_LTLIBRARIES) $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 job_exec_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libjob/libjob.la \
-	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(am__DEPENDENCIES_1) libbulk-exec.la $(am__append_2)
@@ -725,7 +724,6 @@ job_exec_la_LDFLAGS = \
 	-module
 
 job_exec_la_LIBADD = $(top_builddir)/src/common/libjob/libjob.la \
-	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
 	$(top_builddir)/src/common/libflux-internal.la \
 	$(top_builddir)/src/common/libflux-core.la $(JANSSON_LIBS) \
 	libbulk-exec.la $(am__append_2)

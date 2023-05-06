@@ -115,7 +115,7 @@ static struct optparse_option opts[] = {
     { .name = "setattr",    .key = 'S', .has_arg = 1, .arginfo = "ATTR=VAL",
       .usage = "Set broker attribute", },
     { .name = "config-path",.key = 'c', .has_arg = 1, .arginfo = "PATH",
-      .usage = "Set broker config from PATH (default: none)", },
+      .usage = "Set broker config directory (default: none)", },
     OPTPARSE_TABLE_END,
 };
 
@@ -409,11 +409,6 @@ int main (int argc, char *argv[])
     if (ctx.rank == 0 && execute_parental_notifications (&ctx) < 0)
         goto cleanup;
 
-    /* Set up internal logging for libsubprocesses.
-     */
-    if (flux_set_default_subprocess_log (ctx.h, flux_llog, ctx.h) < 0)
-        goto cleanup;
-
     if (create_runat_phases (&ctx) < 0)
         goto cleanup;
 
@@ -514,6 +509,12 @@ int main (int argc, char *argv[])
         log_err ("flux_reactor_run");
     if (ctx.verbose > 1)
         log_msg ("exited event loop");
+
+    /* inform all lingering subprocesses we are tearing down.  Do this
+     * before any cleanup/teardown below, as this call will re-enter
+     * the reactor.
+     */
+    exec_terminate_subprocesses (ctx.h);
 
 cleanup:
     if (ctx.verbose > 1)
@@ -1467,6 +1468,11 @@ static void broker_panic_cb (flux_t *h, flux_msg_handler_t *mh,
 static void broker_disconnect_cb (flux_t *h, flux_msg_handler_t *mh,
                                const flux_msg_t *msg, void *arg)
 {
+    const char *sender;
+
+    if ((sender = flux_msg_route_first (msg)))
+        exec_terminate_subprocesses_by_uuid (h, sender);
+    /* no response */
 }
 
 static int route_to_handle (const flux_msg_t *msg, void *arg)
@@ -1636,7 +1642,6 @@ static struct internal_service services[] = {
     { "state-machine",      NULL },
     { "groups",             NULL },
     { "shutdown",           NULL },
-    { "rexec",              NULL },
     { NULL, NULL, },
 };
 

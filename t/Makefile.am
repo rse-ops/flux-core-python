@@ -75,7 +75,6 @@ TESTSCRIPTS = \
 	t0029-filemap-cmd.t \
 	t0030-marshall.t \
 	t0031-constraint-parser.t \
-	t0032-directives-parser.t \
 	t0025-broker-state-machine.t \
 	t0027-broker-groups.t \
 	t0013-config-file.t \
@@ -199,12 +198,6 @@ TESTSCRIPTS = \
 	t2701-mini-batch.t \
 	t2702-mini-alloc.t \
 	t2703-mini-bulksubmit.t \
-	t2710-python-cli-submit.t \
-	t2711-python-cli-run.t \
-	t2712-python-cli-alloc.t \
-	t2713-python-cli-bulksubmit.t \
-	t2714-python-cli-batch.t \
-	t2715-python-cli-cancel.t \
 	t2800-jobs-cmd.t \
 	t2800-jobs-recursive.t \
 	t2800-jobs-instance-info.t \
@@ -293,10 +286,8 @@ EXTRA_DIST= \
 	scripts/run_timeout.py \
 	scripts/startctl.py \
 	scripts/groups.py \
-	scripts/rexec.py \
 	jobspec \
 	marshall \
-	batch \
 	job-manager/dumps \
 	flux-resource \
 	resource/get-xml-test.py
@@ -353,7 +344,6 @@ dist_check_SCRIPTS = \
 	scripts/dmesg-grep.py \
 	scripts/stats-listen.py \
 	scripts/sqlite-query.py \
-	scripts/pipe.py \
 	valgrind/valgrind-workload.sh \
 	valgrind/workload.d/job \
 	content/content-helper.sh \
@@ -405,6 +395,7 @@ check_PROGRAMS = \
 	barrier/tbarrier \
 	reactor/reactorcat \
 	rexec/rexec \
+	rexec/rexec_ps \
 	rexec/rexec_count_stdout \
 	rexec/rexec_getline \
 	job-manager/list-jobs \
@@ -726,6 +717,11 @@ rexec_rexec_SOURCES = rexec/rexec.c
 rexec_rexec_CPPFLAGS = $(test_cppflags)
 rexec_rexec_LDADD = $(test_ldadd)
 rexec_rexec_LDFLAGS = $(test_ldflags)
+
+rexec_rexec_ps_SOURCES = rexec/rexec_ps.c
+rexec_rexec_ps_CPPFLAGS = $(test_cppflags)
+rexec_rexec_ps_LDADD = $(test_ldadd)
+rexec_rexec_ps_LDFLAGS = $(test_ldflags)
 
 rexec_rexec_count_stdout_SOURCES = rexec/rexec_count_stdout.c
 rexec_rexec_count_stdout_CPPFLAGS = $(test_cppflags)

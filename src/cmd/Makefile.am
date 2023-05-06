@@ -94,13 +94,7 @@ nodist_flux_SOURCES = \
 dist_fluxcmd_SCRIPTS = \
 	flux-cron \
 	flux-mini.py \
-	flux-alloc.py \
-	flux-batch.py \
-	flux-run.py \
-	flux-submit.py \
-	flux-bulksubmit.py \
 	flux-jobs.py \
-	flux-fortune.py \
 	flux-resource.py \
 	flux-admin.py \
 	flux-jobtap.py \
@@ -111,8 +105,7 @@ dist_fluxcmd_SCRIPTS = \
 	flux-uri.py \
 	flux-pstree.py \
 	flux-pgrep.py \
-	flux-queue.py \
-	flux-cancel.py
+	flux-queue.py
 
 fluxcmd_PROGRAMS = \
 	flux-terminus \

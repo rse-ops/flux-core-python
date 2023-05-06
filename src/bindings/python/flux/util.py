@@ -218,13 +218,7 @@ class CLIMain(object):
             exit_code = ex
         except Exception as ex:  # pylint: disable=broad-except
             exit_code = 1
-            # Prefer '{strerror}: {filename}' error message over default
-            # OSError string representation which includes useless
-            # `[Error N]` prefix in output.
-            errmsg = getattr(ex, "strerror", None) or str(ex)
-            if getattr(ex, "filename", None):
-                errmsg += f": '{ex.filename}'"
-            self.logger.error(errmsg)
+            self.logger.error(str(ex))
             self.logger.debug(traceback.format_exc())
         finally:
             logging.shutdown()
@@ -575,8 +569,7 @@ class OutputFormat:
         """
         Check for format fields that are prefixed with `?:` (e.g. "?:{name}")
         and filter them out of the current format string if they result in an
-        empty value (as defined by the `empty` tuple defined below) for every
-        entry in `items`.
+        empty string for every entry in `items`.
         """
         #  Build a list of all format strings that have the collapsible
         #  sentinel '?:' to determine which are subject to the test for
@@ -601,10 +594,9 @@ class OutputFormat:
         formatter = self.formatter()
 
         #  Iterate over all items, rebuilding lst each time to contain
-        #  only those fields that resulted in non-"empty" strings:
-        empty = ("", "0", "0s", "0.0", "0:00:00", "1970-01-01T00:00:00")
+        #  only those fields that resulted in nonzero strings:
         for item in items:
-            lst = [x for x in lst if formatter.format(x["fmt"], item) in empty]
+            lst = [x for x in lst if not formatter.format(x["fmt"], item)]
 
             #  If lst is now empty, that means all fields already returned
             #  nonzero strings, so we can break early

@@ -7,9 +7,9 @@ export PLUGIN=${FLUX_BUILD_DIR}/t/job-manager/plugins/.libs/cleanup-event.so
 SHELL=/bin/sh flux start '\
    flux jobtap load $PLUGIN \
 && flux queue stop \
-&& jobid=$(flux submit hostname) \
+&& jobid=$(flux mini submit hostname) \
 && flux job wait-event $jobid depend \
-&& flux cancel $jobid \
+&& flux job cancel $jobid \
 && flux job attach -vE $jobid \
 ; flux queue status -v >t3920.output'
 

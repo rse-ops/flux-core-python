@@ -96,34 +96,6 @@ test_expect_success 'flux-python command runs the configured python' '
 	test "${expected}" = "${actual}"
 '
 
-test_expect_success 'flux fortune help works' '
-	flux fortune --help | grep category
-'
-
-test_expect_success 'flux fortune works' '
-	flux fortune
-'
-
-test_expect_success 'flux fortune all (default) works' '
-	flux fortune -c all
-'
-
-test_expect_success 'flux fortune with valentine works' '
-	flux fortune -c valentines
-'
-
-test_expect_success 'flux fortune with fun works' '
-	flux fortune -c fun
-'
-
-test_expect_success 'flux fortune with facts works' '
-	flux fortune -c facts
-'
-
-test_expect_success 'flux fortune with art works' '
-	flux fortune -c art
-'
-
 # Minimal is sufficient for these tests, but test_under_flux unavailable
 # clear the RC paths
 ARGS="-o,-Sbroker.rc1_path=,-Sbroker.rc3_path="
@@ -589,22 +561,29 @@ test_expect_success 'broker fails on invalid broker.critical-ranks option' '
 test_expect_success 'broker fails on unknown option' '
 	test_must_fail flux start ${ARGS} -o,--not-an-option /bin/true
 '
+
 test_expect_success 'flux-help command list can be extended' '
 	mkdir help.d &&
 	cat <<-EOF  > help.d/test.json &&
-	[{ "name": "test", "description": "test commands",
-	 "commands": [ {"name": "test", "description": "a test" }]}]
+	[{ "category": "test", "command": "test", "description": "a test" }]
 	EOF
-	FLUX_CMDHELP_PATTERN="help.d/*" flux help > help.out 2>&1 &&
-	grep "^test commands" help.out &&
-	grep "a test" help.out &&
+	flux help 2>&1 | sed "0,/^$/d" >help.expected &&
+	cat <<-EOF  >>help.expected &&
+	Common commands from flux-test:
+	   test               a test
+	EOF
+	FLUX_CMDHELP_PATTERN="help.d/*" flux help 2>&1 | sed "0,/^$/d" > help.out &&
+	test_cmp help.expected help.out &&
 	cat <<-EOF  > help.d/test2.json &&
-	[{ "name": "test", "description": "test two commands",
-	 "commands": [ {"name": "test2", "description": "a test two"}]}]
+	[{ "category": "test2", "command": "test2", "description": "a test two" }]
 	EOF
-	FLUX_CMDHELP_PATTERN="help.d/*" flux help > help2.out 2>&1 &&
-	grep "^test two commands" help2.out &&
-	grep "a test two" help2.out
+	cat <<-EOF  >>help.expected &&
+
+	Common commands from flux-test2:
+	   test2              a test two
+	EOF
+	FLUX_CMDHELP_PATTERN="help.d/*" flux help 2>&1 | sed "0,/^$/d" > help.out &&
+	test_cmp help.expected help.out
 '
 test_expect_success 'flux-help command can display manpages for subcommands' '
 	PWD=$(pwd) &&

@@ -48,8 +48,7 @@ void flux_conf_decref (const flux_conf_t *conf);
  */
 int flux_conf_reload_decode (const flux_msg_t *msg, const flux_conf_t **conf);
 
-/* Parse TOML config in 'path' and return a new flux_conf_t on success.
- * If path is a directory, then parse all files matching *.toml in path.
+/* Parse *.toml in 'path' directory.
  */
 flux_conf_t *flux_conf_parse (const char *path, flux_error_t *error);
 

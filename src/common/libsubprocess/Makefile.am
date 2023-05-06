@@ -9,8 +9,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/src/include \
 	-I$(top_srcdir)/src/common/libccan \
-	-I$(top_builddir)/src/common/libflux \
-	-DLLOG_ENABLE_DEBUG=1
+	-I$(top_builddir)/src/common/libflux
 
 noinst_LTLIBRARIES = \
 	libsubprocess.la
@@ -38,34 +37,23 @@ fluxcoreinclude_HEADERS = \
 
 TESTS = \
 	test_cmd.t \
-	test_subprocess.t \
-	test_remote.t \
-	test_iostress.t \
-	test_iochan.t
+	test_subprocess.t
 
 check_PROGRAMS = \
 	$(TESTS) \
 	test_echo \
 	test_multi_echo \
-	test_fork_sleep \
-	test_fdcopy
-
-check_LTLIBRARIES = test/libutil.la
-
+	test_fork_sleep
 
 TEST_EXTENSIONS = .t
 T_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
         $(top_srcdir)/config/tap-driver.sh
 
 test_ldadd = \
-	$(builddir)/test/libutil.la \
-        $(top_builddir)/src/common/libtestutil/libtestutil.la \
-        $(top_builddir)/src/common/libzmqutil/libzmqutil.la \
         $(top_builddir)/src/common/libtap/libtap.la \
         $(top_builddir)/src/common/libsubprocess/libsubprocess.la \
         $(top_builddir)/src/common/libflux-core.la \
-        $(top_builddir)/src/common/libflux-internal.la \
-        $(ZMQ_LIBS)
+        $(top_builddir)/src/common/libflux-internal.la
 
 test_ldflags = \
 	-no-install
@@ -73,10 +61,6 @@ test_ldflags = \
 test_cppflags = \
         $(AM_CPPFLAGS) \
 	-I$(top_srcdir)/src/common/libtap
-
-test_libutil_la_SOURCES = \
-	test/rcmdsrv.h \
-	test/rcmdsrv.c
 
 test_cmd_t_SOURCES = test/cmd.c
 test_cmd_t_CPPFLAGS = $(test_cppflags)
@@ -90,26 +74,7 @@ test_subprocess_t_CPPFLAGS = \
 test_subprocess_t_LDADD = $(test_ldadd)
 test_subprocess_t_LDFLAGS = $(test_ldflags)
 
-test_remote_t_SOURCES = test/remote.c
-test_remote_t_CPPFLAGS = $(test_cppflags)
-test_remote_t_LDADD = $(test_ldadd)
-test_remote_t_LDFLAGS = $(test_ldflags)
-
-test_iostress_t_SOURCES = test/iostress.c
-test_iostress_t_CPPFLAGS = $(test_cppflags)
-test_iostress_t_LDADD = $(test_ldadd)
-test_iostress_t_LDFLAGS = $(test_ldflags)
-
-test_iochan_t_SOURCES = test/iochan.c
-test_iochan_t_CPPFLAGS = \
-	-DTEST_SUBPROCESS_DIR=\"$(top_builddir)/src/common/libsubprocess/\" \
-	$(test_cppflags)
-test_iochan_t_LDADD = $(test_ldadd)
-test_iochan_t_LDFLAGS = $(test_ldflags)
-
 test_echo_SOURCES = test/test_echo.c
-
-test_fdcopy_SOURCES = test/fdcopy.c
 
 test_multi_echo_SOURCES = test/test_multi_echo.c
 

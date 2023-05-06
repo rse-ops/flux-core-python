@@ -50,7 +50,7 @@ if the message doesn't have a JSON payload.
 setting *data* and *len* to the payload data and length. The storage for
 the raw payload belongs to *msg* and should not be freed.
 
-.. include:: common/json_unpack.rst
+.. include:: JSON_UNPACK.rst
 
 
 RETURN VALUE
@@ -68,7 +68,7 @@ EINVAL
 
 EPROTO
    Message decoding failed, such as due to incorrect message type,
-   missing topic string, etc.
+   missing topic string, etc..
 
 
 RESOURCES

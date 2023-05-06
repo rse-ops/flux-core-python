@@ -22,7 +22,6 @@ struct f58_test {
 };
 
 struct f58_test f58_tests [] = {
-#if !ASSUME_BROKEN_LOCALE
     { 0, "ƒ1", "f1" },
     { 1, "ƒ2", "f2" },
     { 57, "ƒz", "fz" },
@@ -37,7 +36,6 @@ struct f58_test f58_tests [] = {
     { 6731191091817518LL, "ƒuZZybuNNy", "fuZZybuNNy" },
     { 18446744073709551614UL, "ƒjpXCZedGfVP", "fjpXCZedGfVP" },
     { 18446744073709551615UL, "ƒjpXCZedGfVQ", "fjpXCZedGfVQ" },
-#endif
     { 0, NULL, NULL },
 };
 
@@ -125,7 +123,6 @@ struct fluid_parse_test {
 };
 
 struct fluid_parse_test fluid_parse_tests [] = {
-#if !ASSUME_BROEN_LOCALE
     { 0, "ƒ1" },
     { 1, "ƒ2" },
     { 57, "ƒz" },
@@ -140,7 +137,6 @@ struct fluid_parse_test fluid_parse_tests [] = {
     { 6731191091817518LL, "ƒuZZybuNNy" },
     { 18446744073709551614UL, "ƒjpXCZedGfVP" },
     { 18446744073709551615UL, "ƒjpXCZedGfVQ" },
-#endif
     { 0, "f1" },
     { 1, "f2" },
     { 4294967295, "f7YXq9G" },

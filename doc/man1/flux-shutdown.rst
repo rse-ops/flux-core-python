@@ -1,3 +1,5 @@
+.. flux-help-description: Shut down a Flux instance
+
 ================
 flux-shutdown(1)
 ================

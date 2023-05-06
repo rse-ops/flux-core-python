@@ -24,7 +24,7 @@ test_expect_success 'job-manager: load sched-simple w/ 1 rank, 2 cores/rank' '
 '
 
 test_expect_success 'job-manager: submit 5 jobs' '
-        flux submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
+        flux mini submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
            hostname
 '
 
@@ -65,7 +65,7 @@ test_expect_success 'job-manager: running job has alloc event' '
 '
 
 test_expect_success 'job-manager: cancel 2' '
-        flux cancel $(cat job2.id)
+        flux job cancel $(cat job2.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RIRSS' '
@@ -174,7 +174,7 @@ test_expect_success 'job-manager: annotate jobs in flux jobs (RIRRR)' '
 '
 
 test_expect_success 'job-manager: cancel 1' '
-        flux cancel $(cat job1.id)
+        flux job cancel $(cat job1.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IIRRR' '
@@ -186,9 +186,9 @@ test_expect_success HAVE_JQ 'job-manager: job state IIRRR' '
 '
 
 test_expect_success 'job-manager: cancel all jobs' '
-        flux cancel $(cat job3.id) &&
-        flux cancel $(cat job4.id) &&
-        flux cancel $(cat job5.id)
+        flux job cancel $(cat job3.id) &&
+        flux job cancel $(cat job4.id) &&
+        flux job cancel $(cat job5.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IIIII' '
@@ -227,7 +227,7 @@ test_expect_success 'job-manager: annotate jobs in flux jobs (IIIII)' '
 
 test_expect_success 'job-manager: simulate alloc failure' '
         flux module debug --setbit 0x1 sched-simple &&
-        flux submit --flags=debug -n1 hostname >job6.id &&
+        flux mini submit --flags=debug -n1 hostname >job6.id &&
         flux job wait-event --timeout=5 $(cat job6.id) exception >ev6.out &&
         grep -q "type=\"alloc\"" ev6.out &&
         grep -q severity=0 ev6.out &&

@@ -72,7 +72,6 @@ flux_broker_LDADD = \
 	$(builddir)/libbroker.la \
 	$(top_builddir)/src/common/libflux-core.la \
 	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
-	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
 	$(top_builddir)/src/common/libpmi/libupmi.la \
 	$(top_builddir)/src/common/libpmi/libpmi_client.la \
 	$(top_builddir)/src/common/libpmi/libpmi_common.la \

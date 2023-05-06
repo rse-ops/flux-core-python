@@ -192,7 +192,8 @@ static void state_cb (flux_subprocess_t *sp, flux_subprocess_state_t state)
 {
     struct perilog_proc *proc;
 
-    if ((state == FLUX_SUBPROCESS_FAILED)
+    if ((state == FLUX_SUBPROCESS_FAILED
+        || state == FLUX_SUBPROCESS_EXEC_FAILED)
         && (proc = flux_subprocess_aux_get (sp, "perilog_proc"))) {
 
         /*  If subprocess failed or execution failed, then we still

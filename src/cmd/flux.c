@@ -73,10 +73,8 @@ void usage (optparse_t *p)
     fprintf (stderr, "\n");
     fprintf (stderr, "For general Flux documentation, please visit\n");
     fprintf (stderr, "    https://flux-framework.readthedocs.io\n");
-    emit_command_help (help_pattern, stderr);
     fprintf (stderr, "\n");
-    fprintf (stderr, "See 'flux help COMMAND' for more information about ");
-    fprintf (stderr, "a specific command.\n");
+    emit_command_help (help_pattern, stderr);
     free (help_pattern);
 }
 

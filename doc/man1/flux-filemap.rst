@@ -1,3 +1,5 @@
+.. flux-help-description: Map files into a Flux instance
+
 ===============
 flux-filemap(1)
 ===============
@@ -66,18 +68,6 @@ OPTIONS
 **-l, --long**
    Include more detail in file listing (*list* subcommand only).
 
-**--small-file-threshold=N**
-   Set the threshold in bytes over which a regular file is mapped through
-   the distributed content cache.  Set to 0 to always use the content cache.
-   The default is 4096 (*map* subcommand only).
-
-**--disable-mmap**
-   Never map a regular file through the distributed content cache.
-
-**--chunksize=N**
-   Limit the content mapped blob size to N bytes.  Set to 0 for unlimited.
-   The default is 1048576 (*map* subcommand only).
-
 **--direct**
    Avoid indirection through the content cache when fetching the top level
    data for each file.  This may be fastest for a single or small number of
@@ -87,8 +77,8 @@ OPTIONS
 **--blobref**
    List blobrefs (*list* subcommand only).
 
-**--raw**
-   List RFC 37 file system objects (*list* subcommand only).
+**--fileref**
+   List fileref objects (*list* subcommand only).
 
 EXAMPLE
 =======
@@ -106,8 +96,8 @@ by multiple jobs.
   flux exec -r all flux filemap get -C /tmp/project
 
   # app1 and app2 have access to local copy of dataset1
-  flux run -N1024 app1 --input /tmp/project/dataset1
-  flux run -N1024 app2 --input /tmp/project/dataset1
+  flux mini run -N1024 app1 --input /tmp/project/dataset1
+  flux mini run -N1024 app2 --input /tmp/project/dataset1
 
   # clean up
   flux exec -r all rm -rf /tmp/project
@@ -125,13 +115,13 @@ which is automatically cleaned up after each job.
   flux filemap map --tags=ds2 -C /project dataset2
 
   # App0 uses $FLUX_JOB_TMPDIR/dataset1 and $FLUX_JOB_TMPDIR/dataset2
-  flux run -N1024 -o stage-in.tags=ds1,ds2 App0
+  flux mini run -N1024 -o stage-in.tags=ds1,ds2 App0
 
   # App1 uses only $FLUX_JOB_TMPDIR/dataset1
-  flux run -N1024 -o stage-in.tags=ds1 App1
+  flux mini run -N1024 -o stage-in.tags=ds1 App1
 
   # App2 uses only $FLUX_JOB_TMPDIR/dataset2
-  flux run -N1024 -o stage-in.tags=ds2 App2
+  flux mini run -N1024 -o stage-in.tags=ds2 App2
 
   # clean up
   flux filemap unmap --tags=ds1,ds2

@@ -1,5 +1,4 @@
-.. flux-help-description: get job status, info, etc (see: flux help job)
-.. flux-help-section: jobs
+.. flux-help-include: true
 
 ===========
 flux-job(1)
@@ -8,8 +7,6 @@ flux-job(1)
 
 SYNOPSIS
 ========
-
-**flux** **job** **attach** [*OPTIONS*] *id*
 
 **flux** **job** **cancel** [*OPTIONS*] *ids...* [*--*] [*message...*]
 
@@ -37,25 +34,6 @@ DESCRIPTION
 ===========
 
 flux-job(1) performs various job related housekeeping functions.
-
-ATTACH
-======
-
-A job can be interactively attached to via ``flux job attach``.  This is
-typically used to watch stdout/stderr while a job is running or after it has
-completed.  It can also be used to feed stdin to a job.
-
-**-l, --label-io**
-   Label output by rank
-
-**-u, --unbuffered**
-   Do not buffer stdin. Note that when ``flux job attach`` is used in a
-   terminal, the terminal itself may line buffer stdin.
-
-**-i, --stdin-ranks=RANKS**
-   Send stdin to only those ranks in the **RANKS** idset. The standard input
-   for tasks not in **RANKS** will be closed. The default is to broadcast
-   stdin to all ranks.
 
 CANCEL
 ======

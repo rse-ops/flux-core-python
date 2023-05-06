@@ -90,12 +90,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-TESTS = test_cmd.t$(EXEEXT) test_subprocess.t$(EXEEXT) \
-	test_remote.t$(EXEEXT) test_iostress.t$(EXEEXT) \
-	test_iochan.t$(EXEEXT)
+TESTS = test_cmd.t$(EXEEXT) test_subprocess.t$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1) test_echo$(EXEEXT) \
-	test_multi_echo$(EXEEXT) test_fork_sleep$(EXEEXT) \
-	test_fdcopy$(EXEEXT)
+	test_multi_echo$(EXEEXT) test_fork_sleep$(EXEEXT)
 subdir = src/common/libsubprocess
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/ac_pkgconfig.m4 \
@@ -141,63 +138,27 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-test_libutil_la_LIBADD =
+am__EXEEXT_1 = test_cmd.t$(EXEEXT) test_subprocess.t$(EXEEXT)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_test_libutil_la_OBJECTS = test/rcmdsrv.lo
-test_libutil_la_OBJECTS = $(am_test_libutil_la_OBJECTS)
-am__EXEEXT_1 = test_cmd.t$(EXEEXT) test_subprocess.t$(EXEEXT) \
-	test_remote.t$(EXEEXT) test_iostress.t$(EXEEXT) \
-	test_iochan.t$(EXEEXT)
 am_test_cmd_t_OBJECTS = test/test_cmd_t-cmd.$(OBJEXT)
 test_cmd_t_OBJECTS = $(am_test_cmd_t_OBJECTS)
-am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(builddir)/test/libutil.la \
-	$(top_builddir)/src/common/libtestutil/libtestutil.la \
-	$(top_builddir)/src/common/libzmqutil/libzmqutil.la \
-	$(top_builddir)/src/common/libtap/libtap.la \
-	$(top_builddir)/src/common/libsubprocess/libsubprocess.la \
-	$(top_builddir)/src/common/libflux-core.la \
-	$(top_builddir)/src/common/libflux-internal.la \
-	$(am__DEPENDENCIES_1)
-test_cmd_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
+test_cmd_t_DEPENDENCIES = $(test_ldadd)
 test_cmd_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(test_cmd_t_LDFLAGS) $(LDFLAGS) -o $@
 am_test_echo_OBJECTS = test/test_echo.$(OBJEXT)
 test_echo_OBJECTS = $(am_test_echo_OBJECTS)
 test_echo_LDADD = $(LDADD)
-am_test_fdcopy_OBJECTS = test/fdcopy.$(OBJEXT)
-test_fdcopy_OBJECTS = $(am_test_fdcopy_OBJECTS)
-test_fdcopy_LDADD = $(LDADD)
 am_test_fork_sleep_OBJECTS = test/test_fork_sleep.$(OBJEXT)
 test_fork_sleep_OBJECTS = $(am_test_fork_sleep_OBJECTS)
 test_fork_sleep_LDADD = $(LDADD)
-am_test_iochan_t_OBJECTS = test/test_iochan_t-iochan.$(OBJEXT)
-test_iochan_t_OBJECTS = $(am_test_iochan_t_OBJECTS)
-test_iochan_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
-test_iochan_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(test_iochan_t_LDFLAGS) $(LDFLAGS) -o $@
-am_test_iostress_t_OBJECTS = test/test_iostress_t-iostress.$(OBJEXT)
-test_iostress_t_OBJECTS = $(am_test_iostress_t_OBJECTS)
-test_iostress_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
-test_iostress_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(test_iostress_t_LDFLAGS) $(LDFLAGS) \
-	-o $@
 am_test_multi_echo_OBJECTS = test/test_multi_echo.$(OBJEXT)
 test_multi_echo_OBJECTS = $(am_test_multi_echo_OBJECTS)
 test_multi_echo_LDADD = $(LDADD)
-am_test_remote_t_OBJECTS = test/test_remote_t-remote.$(OBJEXT)
-test_remote_t_OBJECTS = $(am_test_remote_t_OBJECTS)
-test_remote_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
-test_remote_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(test_remote_t_LDFLAGS) $(LDFLAGS) -o $@
 am_test_subprocess_t_OBJECTS =  \
 	test/test_subprocess_t-subprocess.$(OBJEXT)
 test_subprocess_t_OBJECTS = $(am_test_subprocess_t_OBJECTS)
-test_subprocess_t_DEPENDENCIES = $(am__DEPENDENCIES_2)
+test_subprocess_t_DEPENDENCIES = $(test_ldadd)
 test_subprocess_t_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(test_subprocess_t_LDFLAGS) $(LDFLAGS) \
@@ -236,18 +197,12 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libsubprocess_la_SOURCES) $(test_libutil_la_SOURCES) \
-	$(test_cmd_t_SOURCES) $(test_echo_SOURCES) \
-	$(test_fdcopy_SOURCES) $(test_fork_sleep_SOURCES) \
-	$(test_iochan_t_SOURCES) $(test_iostress_t_SOURCES) \
-	$(test_multi_echo_SOURCES) $(test_remote_t_SOURCES) \
-	$(test_subprocess_t_SOURCES)
-DIST_SOURCES = $(libsubprocess_la_SOURCES) $(test_libutil_la_SOURCES) \
-	$(test_cmd_t_SOURCES) $(test_echo_SOURCES) \
-	$(test_fdcopy_SOURCES) $(test_fork_sleep_SOURCES) \
-	$(test_iochan_t_SOURCES) $(test_iostress_t_SOURCES) \
-	$(test_multi_echo_SOURCES) $(test_remote_t_SOURCES) \
-	$(test_subprocess_t_SOURCES)
+SOURCES = $(libsubprocess_la_SOURCES) $(test_cmd_t_SOURCES) \
+	$(test_echo_SOURCES) $(test_fork_sleep_SOURCES) \
+	$(test_multi_echo_SOURCES) $(test_subprocess_t_SOURCES)
+DIST_SOURCES = $(libsubprocess_la_SOURCES) $(test_cmd_t_SOURCES) \
+	$(test_echo_SOURCES) $(test_fork_sleep_SOURCES) \
+	$(test_multi_echo_SOURCES) $(test_subprocess_t_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -731,8 +686,7 @@ AM_CPPFLAGS = \
 	-I$(top_srcdir) \
 	-I$(top_srcdir)/src/include \
 	-I$(top_srcdir)/src/common/libccan \
-	-I$(top_builddir)/src/common/libflux \
-	-DLLOG_ENABLE_DEBUG=1
+	-I$(top_builddir)/src/common/libflux
 
 noinst_LTLIBRARIES = \
 	libsubprocess.la
@@ -758,20 +712,15 @@ libsubprocess_la_SOURCES = \
 fluxcoreinclude_HEADERS = \
 	subprocess.h
 
-check_LTLIBRARIES = test/libutil.la
 TEST_EXTENSIONS = .t
 T_LOG_DRIVER = env AM_TAP_AWK='$(AWK)' $(SHELL) \
         $(top_srcdir)/config/tap-driver.sh
 
 test_ldadd = \
-	$(builddir)/test/libutil.la \
-        $(top_builddir)/src/common/libtestutil/libtestutil.la \
-        $(top_builddir)/src/common/libzmqutil/libzmqutil.la \
         $(top_builddir)/src/common/libtap/libtap.la \
         $(top_builddir)/src/common/libsubprocess/libsubprocess.la \
         $(top_builddir)/src/common/libflux-core.la \
-        $(top_builddir)/src/common/libflux-internal.la \
-        $(ZMQ_LIBS)
+        $(top_builddir)/src/common/libflux-internal.la
 
 test_ldflags = \
 	-no-install
@@ -779,10 +728,6 @@ test_ldflags = \
 test_cppflags = \
         $(AM_CPPFLAGS) \
 	-I$(top_srcdir)/src/common/libtap
-
-test_libutil_la_SOURCES = \
-	test/rcmdsrv.h \
-	test/rcmdsrv.c
 
 test_cmd_t_SOURCES = test/cmd.c
 test_cmd_t_CPPFLAGS = $(test_cppflags)
@@ -795,23 +740,7 @@ test_subprocess_t_CPPFLAGS = \
 
 test_subprocess_t_LDADD = $(test_ldadd)
 test_subprocess_t_LDFLAGS = $(test_ldflags)
-test_remote_t_SOURCES = test/remote.c
-test_remote_t_CPPFLAGS = $(test_cppflags)
-test_remote_t_LDADD = $(test_ldadd)
-test_remote_t_LDFLAGS = $(test_ldflags)
-test_iostress_t_SOURCES = test/iostress.c
-test_iostress_t_CPPFLAGS = $(test_cppflags)
-test_iostress_t_LDADD = $(test_ldadd)
-test_iostress_t_LDFLAGS = $(test_ldflags)
-test_iochan_t_SOURCES = test/iochan.c
-test_iochan_t_CPPFLAGS = \
-	-DTEST_SUBPROCESS_DIR=\"$(top_builddir)/src/common/libsubprocess/\" \
-	$(test_cppflags)
-
-test_iochan_t_LDADD = $(test_ldadd)
-test_iochan_t_LDFLAGS = $(test_ldflags)
 test_echo_SOURCES = test/test_echo.c
-test_fdcopy_SOURCES = test/fdcopy.c
 test_multi_echo_SOURCES = test/test_multi_echo.c
 test_fork_sleep_SOURCES = test/test_fork_sleep.c
 all: all-am
@@ -848,17 +777,6 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
 
-clean-checkLTLIBRARIES:
-	-test -z "$(check_LTLIBRARIES)" || rm -f $(check_LTLIBRARIES)
-	@list='$(check_LTLIBRARIES)'; \
-	locs=`for p in $$list; do echo $$p; done | \
-	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
-	      sort -u`; \
-	test -z "$$locs" || { \
-	  echo rm -f $${locs}; \
-	  rm -f $${locs}; \
-	}
-
 clean-noinstLTLIBRARIES:
 	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
 	@list='$(noinst_LTLIBRARIES)'; \
@@ -872,16 +790,6 @@ clean-noinstLTLIBRARIES:
 
 libsubprocess.la: $(libsubprocess_la_OBJECTS) $(libsubprocess_la_DEPENDENCIES) $(EXTRA_libsubprocess_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(LINK)  $(libsubprocess_la_OBJECTS) $(libsubprocess_la_LIBADD) $(LIBS)
-test/$(am__dirstamp):
-	@$(MKDIR_P) test
-	@: > test/$(am__dirstamp)
-test/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) test/$(DEPDIR)
-	@: > test/$(DEPDIR)/$(am__dirstamp)
-test/rcmdsrv.lo: test/$(am__dirstamp) test/$(DEPDIR)/$(am__dirstamp)
-
-test/libutil.la: $(test_libutil_la_OBJECTS) $(test_libutil_la_DEPENDENCIES) $(EXTRA_test_libutil_la_DEPENDENCIES) test/$(am__dirstamp)
-	$(AM_V_CCLD)$(LINK)  $(test_libutil_la_OBJECTS) $(test_libutil_la_LIBADD) $(LIBS)
 
 clean-checkPROGRAMS:
 	@list='$(check_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -891,6 +799,12 @@ clean-checkPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+test/$(am__dirstamp):
+	@$(MKDIR_P) test
+	@: > test/$(am__dirstamp)
+test/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) test/$(DEPDIR)
+	@: > test/$(DEPDIR)/$(am__dirstamp)
 test/test_cmd_t-cmd.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
@@ -903,42 +817,18 @@ test/test_echo.$(OBJEXT): test/$(am__dirstamp) \
 test_echo$(EXEEXT): $(test_echo_OBJECTS) $(test_echo_DEPENDENCIES) $(EXTRA_test_echo_DEPENDENCIES) 
 	@rm -f test_echo$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_echo_OBJECTS) $(test_echo_LDADD) $(LIBS)
-test/fdcopy.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_fdcopy$(EXEEXT): $(test_fdcopy_OBJECTS) $(test_fdcopy_DEPENDENCIES) $(EXTRA_test_fdcopy_DEPENDENCIES) 
-	@rm -f test_fdcopy$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_fdcopy_OBJECTS) $(test_fdcopy_LDADD) $(LIBS)
 test/test_fork_sleep.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
 test_fork_sleep$(EXEEXT): $(test_fork_sleep_OBJECTS) $(test_fork_sleep_DEPENDENCIES) $(EXTRA_test_fork_sleep_DEPENDENCIES) 
 	@rm -f test_fork_sleep$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_fork_sleep_OBJECTS) $(test_fork_sleep_LDADD) $(LIBS)
-test/test_iochan_t-iochan.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_iochan.t$(EXEEXT): $(test_iochan_t_OBJECTS) $(test_iochan_t_DEPENDENCIES) $(EXTRA_test_iochan_t_DEPENDENCIES) 
-	@rm -f test_iochan.t$(EXEEXT)
-	$(AM_V_CCLD)$(test_iochan_t_LINK) $(test_iochan_t_OBJECTS) $(test_iochan_t_LDADD) $(LIBS)
-test/test_iostress_t-iostress.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_iostress.t$(EXEEXT): $(test_iostress_t_OBJECTS) $(test_iostress_t_DEPENDENCIES) $(EXTRA_test_iostress_t_DEPENDENCIES) 
-	@rm -f test_iostress.t$(EXEEXT)
-	$(AM_V_CCLD)$(test_iostress_t_LINK) $(test_iostress_t_OBJECTS) $(test_iostress_t_LDADD) $(LIBS)
 test/test_multi_echo.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
 test_multi_echo$(EXEEXT): $(test_multi_echo_OBJECTS) $(test_multi_echo_DEPENDENCIES) $(EXTRA_test_multi_echo_DEPENDENCIES) 
 	@rm -f test_multi_echo$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_multi_echo_OBJECTS) $(test_multi_echo_LDADD) $(LIBS)
-test/test_remote_t-remote.$(OBJEXT): test/$(am__dirstamp) \
-	test/$(DEPDIR)/$(am__dirstamp)
-
-test_remote.t$(EXEEXT): $(test_remote_t_OBJECTS) $(test_remote_t_DEPENDENCIES) $(EXTRA_test_remote_t_DEPENDENCIES) 
-	@rm -f test_remote.t$(EXEEXT)
-	$(AM_V_CCLD)$(test_remote_t_LINK) $(test_remote_t_OBJECTS) $(test_remote_t_LDADD) $(LIBS)
 test/test_subprocess_t-subprocess.$(OBJEXT): test/$(am__dirstamp) \
 	test/$(DEPDIR)/$(am__dirstamp)
 
@@ -949,7 +839,6 @@ test_subprocess.t$(EXEEXT): $(test_subprocess_t_OBJECTS) $(test_subprocess_t_DEP
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f test/*.$(OBJEXT)
-	-rm -f test/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -962,15 +851,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/subprocess.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/fdcopy.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/rcmdsrv.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_cmd_t-cmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_echo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_fork_sleep.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_iochan_t-iochan.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_iostress_t-iostress.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_multi_echo.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_remote_t-remote.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@test/$(DEPDIR)/test_subprocess_t-subprocess.Po@am__quote@
 
 .c.o:
@@ -1011,48 +895,6 @@ test/test_cmd_t-cmd.obj: test/cmd.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_cmd_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_cmd_t-cmd.obj `if test -f 'test/cmd.c'; then $(CYGPATH_W) 'test/cmd.c'; else $(CYGPATH_W) '$(srcdir)/test/cmd.c'; fi`
 
-test/test_iochan_t-iochan.o: test/iochan.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iochan_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_iochan_t-iochan.o -MD -MP -MF test/$(DEPDIR)/test_iochan_t-iochan.Tpo -c -o test/test_iochan_t-iochan.o `test -f 'test/iochan.c' || echo '$(srcdir)/'`test/iochan.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_iochan_t-iochan.Tpo test/$(DEPDIR)/test_iochan_t-iochan.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/iochan.c' object='test/test_iochan_t-iochan.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iochan_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_iochan_t-iochan.o `test -f 'test/iochan.c' || echo '$(srcdir)/'`test/iochan.c
-
-test/test_iochan_t-iochan.obj: test/iochan.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iochan_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_iochan_t-iochan.obj -MD -MP -MF test/$(DEPDIR)/test_iochan_t-iochan.Tpo -c -o test/test_iochan_t-iochan.obj `if test -f 'test/iochan.c'; then $(CYGPATH_W) 'test/iochan.c'; else $(CYGPATH_W) '$(srcdir)/test/iochan.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_iochan_t-iochan.Tpo test/$(DEPDIR)/test_iochan_t-iochan.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/iochan.c' object='test/test_iochan_t-iochan.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iochan_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_iochan_t-iochan.obj `if test -f 'test/iochan.c'; then $(CYGPATH_W) 'test/iochan.c'; else $(CYGPATH_W) '$(srcdir)/test/iochan.c'; fi`
-
-test/test_iostress_t-iostress.o: test/iostress.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iostress_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_iostress_t-iostress.o -MD -MP -MF test/$(DEPDIR)/test_iostress_t-iostress.Tpo -c -o test/test_iostress_t-iostress.o `test -f 'test/iostress.c' || echo '$(srcdir)/'`test/iostress.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_iostress_t-iostress.Tpo test/$(DEPDIR)/test_iostress_t-iostress.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/iostress.c' object='test/test_iostress_t-iostress.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iostress_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_iostress_t-iostress.o `test -f 'test/iostress.c' || echo '$(srcdir)/'`test/iostress.c
-
-test/test_iostress_t-iostress.obj: test/iostress.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iostress_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_iostress_t-iostress.obj -MD -MP -MF test/$(DEPDIR)/test_iostress_t-iostress.Tpo -c -o test/test_iostress_t-iostress.obj `if test -f 'test/iostress.c'; then $(CYGPATH_W) 'test/iostress.c'; else $(CYGPATH_W) '$(srcdir)/test/iostress.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_iostress_t-iostress.Tpo test/$(DEPDIR)/test_iostress_t-iostress.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/iostress.c' object='test/test_iostress_t-iostress.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_iostress_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_iostress_t-iostress.obj `if test -f 'test/iostress.c'; then $(CYGPATH_W) 'test/iostress.c'; else $(CYGPATH_W) '$(srcdir)/test/iostress.c'; fi`
-
-test/test_remote_t-remote.o: test/remote.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_remote_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_remote_t-remote.o -MD -MP -MF test/$(DEPDIR)/test_remote_t-remote.Tpo -c -o test/test_remote_t-remote.o `test -f 'test/remote.c' || echo '$(srcdir)/'`test/remote.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_remote_t-remote.Tpo test/$(DEPDIR)/test_remote_t-remote.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/remote.c' object='test/test_remote_t-remote.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_remote_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_remote_t-remote.o `test -f 'test/remote.c' || echo '$(srcdir)/'`test/remote.c
-
-test/test_remote_t-remote.obj: test/remote.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_remote_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_remote_t-remote.obj -MD -MP -MF test/$(DEPDIR)/test_remote_t-remote.Tpo -c -o test/test_remote_t-remote.obj `if test -f 'test/remote.c'; then $(CYGPATH_W) 'test/remote.c'; else $(CYGPATH_W) '$(srcdir)/test/remote.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_remote_t-remote.Tpo test/$(DEPDIR)/test_remote_t-remote.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test/remote.c' object='test/test_remote_t-remote.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_remote_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test/test_remote_t-remote.obj `if test -f 'test/remote.c'; then $(CYGPATH_W) 'test/remote.c'; else $(CYGPATH_W) '$(srcdir)/test/remote.c'; fi`
-
 test/test_subprocess_t-subprocess.o: test/subprocess.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_subprocess_t_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test/test_subprocess_t-subprocess.o -MD -MP -MF test/$(DEPDIR)/test_subprocess_t-subprocess.Tpo -c -o test/test_subprocess_t-subprocess.o `test -f 'test/subprocess.c' || echo '$(srcdir)/'`test/subprocess.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) test/$(DEPDIR)/test_subprocess_t-subprocess.Tpo test/$(DEPDIR)/test_subprocess_t-subprocess.Po
@@ -1072,7 +914,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-	-rm -rf test/.libs test/_libs
 install-fluxcoreincludeHEADERS: $(fluxcoreinclude_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(fluxcoreinclude_HEADERS)'; test -n "$(fluxcoreincludedir)" || list=; \
@@ -1277,7 +1118,7 @@ check-TESTS:
 	log_list=`echo $$log_list`; trs_list=`echo $$trs_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all $(check_LTLIBRARIES) $(check_PROGRAMS)
+recheck: all $(check_PROGRAMS)
 	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -1334,7 +1175,7 @@ distdir: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_LTLIBRARIES) $(check_PROGRAMS)
+	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
@@ -1379,8 +1220,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES mostlyclean-am
+clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR) test/$(DEPDIR)
@@ -1451,20 +1292,20 @@ uninstall-am: uninstall-fluxcoreincludeHEADERS
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-TESTS check-am clean \
-	clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-fluxcoreincludeHEADERS install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am recheck tags tags-am uninstall \
-	uninstall-am uninstall-fluxcoreincludeHEADERS
+	clean-checkPROGRAMS clean-generic clean-libtool \
+	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am html html-am info info-am \
+	install install-am install-data install-data-am install-dvi \
+	install-dvi-am install-exec install-exec-am \
+	install-fluxcoreincludeHEADERS install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	recheck tags tags-am uninstall uninstall-am \
+	uninstall-fluxcoreincludeHEADERS
 
 .PRECIOUS: Makefile
 

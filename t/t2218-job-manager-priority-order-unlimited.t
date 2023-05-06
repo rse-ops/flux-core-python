@@ -16,7 +16,7 @@ flux setattr log-stderr-level 1
 # flux queue stop/start to ensure no scheduling until after all jobs submitted
 test_expect_success 'job-manager: submit 5 jobs (differing urgencies)' '
         flux queue stop &&
-        flux bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
+        flux mini bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: 12 10 14 16 18 > jobids.out &&
         flux queue start
 '
@@ -41,7 +41,7 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs (SSSRR)' '
 '
 
 test_expect_success 'job-manager: cancel 5' '
-        flux cancel $(cat job5.id)
+        flux job cancel $(cat job5.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state SSRRI' '
@@ -110,7 +110,7 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs updated (SSRRI)' '
 '
 
 test_expect_success 'job-manager: cancel 4' '
-        flux cancel $(cat job4.id)
+        flux job cancel $(cat job4.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RSRII' '
@@ -135,8 +135,8 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs updated (RSRII)' '
 # cancel non-running jobs first, to ensure they are not accidentally run when
 # running jobs free resources.
 test_expect_success 'job-manager: cancel all jobs' '
-        flux cancel --all --states=pending &&
-        flux cancel --all
+        flux job cancelall --states=SCHED -f &&
+        flux job cancelall -f
 '
 
 test_done

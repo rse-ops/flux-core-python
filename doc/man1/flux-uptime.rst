@@ -1,5 +1,4 @@
 .. flux-help-description: Tell how long Flux has been up and running
-.. flux-help-section: instance
 
 ==============
 flux-uptime(1)

@@ -13,10 +13,10 @@
 #
 export startctl="flux python ${SHARNESS_TEST_SRCDIR}/scripts/startctl.py"
 SHELL=/bin/sh flux start -s 4 -o,-Stbon.topo=kary:4 --test-exit-mode=leader '\
-   id=$(flux submit -n4 -N4 sleep 300) \
+   id=$(flux mini submit -n4 -N4 sleep 300) \
 && flux job wait-event $id start \
 && $startctl kill 3 19 \
-&& flux cancel $id \
+&& flux job cancel $id \
 && flux job wait-event $id exception \
 && $startctl kill 3 9 \
 && flux job attach -vE $id \

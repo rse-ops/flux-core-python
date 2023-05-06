@@ -1,3 +1,5 @@
+.. flux-help-include: true
+
 ============
 flux-exec(1)
 ============
@@ -67,7 +69,7 @@ OPTIONS
 NODESET FORMAT
 ==============
 
-.. include:: common/nodeset.rst
+.. include:: NODESET.rst
 
 
 RESOURCES

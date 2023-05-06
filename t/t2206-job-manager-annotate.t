@@ -15,7 +15,7 @@ test_expect_success 'job-manager: initially run without scheduler' '
         flux module unload sched-simple
 '
 test_expect_success 'job-manager: submit 5 jobs' '
-        flux submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
+        flux mini submit --log=job{cc}.id --cc="1-5" --flags=debug -n1 \
            hostname
 '
 
@@ -119,7 +119,7 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs in flux-jobs (RRSSS)' '
 '
 
 test_expect_success 'job-manager: cancel 2' '
-        flux cancel $(cat job2.id)
+        flux job cancel $(cat job2.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state RIRSS' '
@@ -173,8 +173,8 @@ test_expect_success HAVE_JQ 'job-manager: annotate jobs in flux-jobs (RIRSS)' '
 # cancel non-running jobs first, to ensure they are not accidentally run when
 # running jobs free resources.
 test_expect_success 'job-manager: cancel all jobs' '
-        flux cancel --all --states=pending &&
-        flux cancel --all
+        flux job cancelall --states=SCHED -f &&
+        flux job cancelall -f
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IIIII' '

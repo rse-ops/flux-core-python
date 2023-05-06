@@ -1,5 +1,4 @@
-.. flux-help-description: list and manipulate flux queues
-.. flux-help-section: instance
+.. flux-help-description: Manipulate flux queues
 
 =============
 flux-queue(1)
@@ -174,4 +173,4 @@ RFC 23: Flux Standard Duration: https://flux-framework.readthedocs.io/projects/f
 SEE ALSO
 ========
 
-:man1:`flux-jobs`, :man1:`flux-submit`
+:man1:`flux-jobs`, :man1:`flux-mini`

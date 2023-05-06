@@ -14,7 +14,7 @@ flux setattr log-stderr-level 1
 
 # N.B. resources = 1 rank, 2 cores/rank
 test_expect_success 'job-manager: submit 5 jobs (job 3,4,5 held)' '
-        flux bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
+        flux mini bulksubmit --log=job{seq1}.id --urgency={} --flags=debug -n1 \
            hostname ::: default default hold hold hold
 '
 
@@ -32,14 +32,6 @@ test_expect_success HAVE_JQ 'job-manager: job annotations correct (RSSSS)' '
         jmgr_check_no_annotations $(cat job3.id) &&
         jmgr_check_no_annotations $(cat job4.id) &&
         jmgr_check_no_annotations $(cat job5.id)
-'
-
-test_expect_success 'job-manager: hold job 3, 5 again (issue #4940)' '
-        flux job urgency $(cat job3.id) hold &&
-        flux job urgency $(cat job3.id) hold &&
-        flux job urgency $(cat job3.id) hold &&
-        flux job urgency $(cat job3.id) hold &&
-        flux job urgency $(cat job5.id) hold
 '
 
 test_expect_success 'job-manager: remove hold on job 3, 4, 5' '
@@ -88,8 +80,8 @@ test_expect_success HAVE_JQ 'job-manager: job annotations updated (RRSSS)' '
 '
 
 test_expect_success 'job-manager: cancel job 1 & 2' '
-        flux cancel $(cat job1.id) &&
-        flux cancel $(cat job2.id)
+        flux job cancel $(cat job1.id) &&
+        flux job cancel $(cat job2.id)
 '
 
 test_expect_success HAVE_JQ 'job-manager: job state IISSR' '
@@ -130,8 +122,8 @@ test_expect_success HAVE_JQ 'job-manager: job annotations updated (IIRSR)' '
 '
 
 test_expect_success 'job-manager: cancel all jobs' '
-        flux cancel $(cat job4.id) &&
-        flux cancel $(cat job5.id)
+        flux job cancel $(cat job4.id) &&
+        flux job cancel $(cat job5.id)
 '
 
 test_done

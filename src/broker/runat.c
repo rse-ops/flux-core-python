@@ -179,6 +179,7 @@ static void state_change_cb (flux_subprocess_t *p,
 
     switch (state) {
         case FLUX_SUBPROCESS_INIT:
+        case FLUX_SUBPROCESS_EXEC_FAILED:
         case FLUX_SUBPROCESS_EXITED:
         case FLUX_SUBPROCESS_FAILED:
             break;

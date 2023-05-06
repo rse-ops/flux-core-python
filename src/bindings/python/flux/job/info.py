@@ -29,6 +29,7 @@ try:
 except:
     SchedResourceList = None
 
+
 def statetostr(stateid, fmt="L"):
     return raw.flux_job_statetostr(stateid, fmt).decode("utf-8")
 

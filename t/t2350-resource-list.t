@@ -155,8 +155,8 @@ test_expect_success 'flux resource lists no properties in propertiesx (single)' 
 	grep "free 4" listpropx_single.out
 '
 test_expect_success 'run a few jobs' '
-	flux submit -q batch sleep 30 > job1A.id &&
-	flux submit -q debug sleep 30 > job1B.id
+	flux mini submit -q batch sleep 30 > job1A.id &&
+	flux mini submit -q debug sleep 30 > job1B.id
 '
 test_expect_success 'flux resource lists expected queues in states (single)' '
 	flux resource list -o "{state} {nnodes} {queue}" > list2.out &&
@@ -166,7 +166,7 @@ test_expect_success 'flux resource lists expected queues in states (single)' '
 	test $(grep -c "allocated 1 debug" list2.out) -eq 1
 '
 test_expect_success 'cleanup jobs' '
-	flux cancel $(cat job1A.id) $(cat job1B.id)
+	flux job cancel $(cat job1A.id) $(cat job1B.id)
 '
 test_expect_success 'configure queues and resource split amongst queues w/ all' '
 	flux R encode -r 0-3 -p all:0-3 -p batch:0-1 -p debug:2-3 \
@@ -264,8 +264,8 @@ test_expect_success 'flux resource lists expected queues (every)' '
 	test $(grep "down 0" listqueue_every.out | grep -c every) -eq 0
 '
 test_expect_success 'run a few jobs (every)' '
-	flux submit -q batch sleep 30 > job2A.id &&
-	flux submit -q debug sleep 30 > job2B.id
+	flux mini submit -q batch sleep 30 > job2A.id &&
+	flux mini submit -q debug sleep 30 > job2B.id
 '
 test_expect_success 'flux resource lists expected queues in states (every)' '
 	flux resource list -o "{state} {nnodes} {queue}" > listqueue_every2.out &&
@@ -278,6 +278,6 @@ test_expect_success 'flux resource lists expected queues in states (every)' '
 	test $(grep "down 0" listqueue_every2.out | grep -c every) -eq 0
 '
 test_expect_success 'cleanup jobs' '
-	flux cancel $(cat job2A.id) $(cat job2B.id)
+	flux job cancel $(cat job2A.id) $(cat job2B.id)
 '
 test_done

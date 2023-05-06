@@ -7,15 +7,15 @@ test_description='Test flux job status'
 test_under_flux 2 job
 
 test_expect_success 'status: submit a series of jobs' '
-	zero=$(flux submit /bin/true) &&
-	one=$(flux submit /bin/false) &&
-	sigint=$(flux submit sh -c "kill -INT \$$") &&
-	shell_sigquit=$(flux submit sh -c "kill -QUIT \$PPID") &&
-	unsatisfiable=$(flux submit -n 1024 hostname) &&
-	killed=$(flux submit sleep 600) &&
+	zero=$(flux mini submit /bin/true) &&
+	one=$(flux mini submit /bin/false) &&
+	sigint=$(flux mini submit sh -c "kill -INT \$$") &&
+	shell_sigquit=$(flux mini submit sh -c "kill -QUIT \$PPID") &&
+	unsatisfiable=$(flux mini submit -n 1024 hostname) &&
+	killed=$(flux mini submit sleep 600) &&
 	flux queue stop &&
-	canceled=$(flux submit -n 1024 hostname) &&
-	flux cancel ${canceled} &&
+	canceled=$(flux mini submit -n 1024 hostname) &&
+	flux job cancel ${canceled} &&
 	flux queue start
 '
 test_expect_success 'status: exits with error with no jobs specified' '
@@ -53,7 +53,7 @@ test_expect_success HAVE_JQ 'status: flux-job status --json works' '
 		jq -e ".waitstatus == 256"
 '
 test_expect_success HAVE_JQ 'status: returns most severe exception' '
-	jobid=$(flux submit --urgency=0 sleep 20) &&
+	jobid=$(flux mini submit --urgency=0 sleep 20) &&
 	flux job raise --severity=1 -t test $jobid &&
 	flux job raise --severity=0 -t cancel $jobid &&
 	flux job wait-event -v $jobid clean &&
@@ -62,7 +62,7 @@ test_expect_success HAVE_JQ 'status: returns most severe exception' '
 		jq -e ".exception_severity == 0"
 '
 test_expect_success HAVE_JQ 'status: returns most severe exception' '
-	jobid=$(flux submit --urgency=0 sleep 0) &&
+	jobid=$(flux mini submit --urgency=0 sleep 0) &&
 	flux job raise --severity=1 -t test $jobid &&
 	flux job raise --severity=2 -t test2 $jobid &&
 	flux job urgency ${jobid} 16 &&
@@ -75,7 +75,7 @@ test_expect_success HAVE_JQ 'status: returns most severe exception' '
 '
 test_expect_success 'status: returns 143 (SIGTERM) for canceled running job' '
 	flux job wait-event -p guest.exec.eventlog ${killed} shell.start &&
-	flux cancel ${killed} &&
+	flux job cancel ${killed} &&
 	test_expect_code 143 flux job status -v ${killed}
 '
 test_expect_success 'status: returns highest status for multiple jobs' '

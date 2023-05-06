@@ -19,7 +19,6 @@
 
 #include "src/common/libtap/tap.h"
 #include "src/common/libsubprocess/subprocess.h"
-#include "src/common/libsubprocess/server.h"
 
 extern char **environ;
 
@@ -152,12 +151,15 @@ void test_basic_errors (flux_reactor_t *r)
     ok ((h = flux_open ("loop://", 0)) != NULL,
         "flux_open on loop works");
 
-    ok (!subprocess_server_create (NULL, NULL, 0)
+    ok (!flux_subprocess_server_start (NULL, NULL, 0)
         && errno == EINVAL,
-        "subprocess_server_create fails with NULL pointer inputs");
-    ok (subprocess_server_shutdown (NULL, 0) == NULL
+        "flux_subprocess_server_start fails with NULL pointer inputs");
+    ok (flux_subprocess_server_terminate_by_uuid (NULL, NULL) < 0
         && errno == EINVAL,
-        "subprocess_server_shutdown fails with NULL pointer inputs");
+        "flux_subprocess_server_terminate_by_uuid fails with NULL pointer inputs");
+    ok (flux_subprocess_server_subprocesses_kill (NULL, 0, 0.) < 0
+        && errno == EINVAL,
+        "flux_subprocess_server_subprocesses_kill fails with NULL pointer inputs");
 
     ok (flux_exec (NULL, 0, NULL, NULL, NULL) == NULL
         && errno == EINVAL,
@@ -1491,7 +1493,7 @@ void test_state_change_stopped (flux_reactor_t *r)
 
     flux_future_t *f = flux_subprocess_kill (p, SIGSTOP);
     ok (f != NULL,
-        "flux_subprocess_kill SIGSTOP");
+        "flux_subprocess_kill SIGStOP");
     flux_future_destroy (f);
 
     int rc = flux_reactor_run (r, 0);
@@ -1508,6 +1510,8 @@ void test_state_strings (void)
     ok (!strcasecmp (flux_subprocess_state_string (FLUX_SUBPROCESS_RUNNING), "Running"),
         "flux_subprocess_state_string returns correct string");
     ok (!strcasecmp (flux_subprocess_state_string (FLUX_SUBPROCESS_EXITED), "Exited"),
+        "flux_subprocess_state_string returns correct string");
+    ok (!strcasecmp (flux_subprocess_state_string (FLUX_SUBPROCESS_EXEC_FAILED), "Exec Failed"),
         "flux_subprocess_state_string returns correct string");
     ok (!flux_subprocess_state_string (100),
         "flux_subprocess_state_string returns NULL on bad state");

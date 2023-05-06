@@ -20,7 +20,6 @@
 
 #include "src/common/libczmqcontainers/czmq_containers.h"
 #include "src/common/libutil/fdwalk.h"
-#include "src/common/libutil/llog.h"
 
 #include "subprocess_private.h"
 #include "command.h"
@@ -57,7 +56,7 @@ static void closefd_child (void *arg, int fd)
  *   signal to proceed. This is done by writing 1 byte to child side of
  *   socketpair, and waiting for parent to write one byte back.
  *
- * Call fprintf instead of llog_error(), errors in child should
+ * Call fprintf instead of flux_log(), errors in child should
  *  go to parent error streams.
  */
 static int local_child_ready (flux_subprocess_t *p)
@@ -81,7 +80,7 @@ static int local_child_ready (flux_subprocess_t *p)
 static void local_child_report_exec_failed_errno (flux_subprocess_t *p, int e)
 {
     int fd = p->sync_fds[1];
-    /* Call fprintf instead of llog_error(), errors in child
+    /* Call fprintf instead of flux_log(), errors in child
      * should go to parent error streams. */
     if (write (fd, &e, sizeof (e)) != sizeof (e))
         fprintf (stderr, "local_child_report_exec_failed_errno: %s\n",
@@ -103,7 +102,7 @@ static int local_child (flux_subprocess_t *p)
     /* Throughout this function use _exit() instead of exit(), to
      * avoid calling any atexit() routines of parent.
      *
-     * Call fprintf instead of llog_error(), errors in child
+     * Call fprintf instead of flux_log(), errors in child
      * should go to parent error streams.
      */
 
@@ -174,8 +173,8 @@ static int local_child (flux_subprocess_t *p)
         }
     }
 
-    environ = cmd_env_expand (p->cmd);
-    argv = cmd_argv_expand (p->cmd);
+    environ = flux_cmd_env_expand (p->cmd);
+    argv = flux_cmd_argv_expand (p->cmd);
     if (!environ || !argv) {
         fprintf (stderr, "out of memory\n");
         _exit (1);
@@ -211,9 +210,7 @@ static int subprocess_parent_wait_on_child (flux_subprocess_t *p)
     char c;
 
     if (read (p->sync_fds[0], &c, sizeof (c)) != 1) {
-        llog_debug (p,
-                    "subprocess_parent_wait_on_child: read: %s",
-                    strerror (errno));
+        flux_log (p->h, LOG_DEBUG, "subprocess_parent_wait_on_child: read");
         return -1;
     }
     return 0;
@@ -260,6 +257,8 @@ static int local_exec (flux_subprocess_t *p)
             return -1;
         p->status = status;
 
+        /* spiritually FLUX_SUBPROCESS_EXEC_FAILED state at this
+         * point */
         errno = p->exec_failed_errno;
         return -1;
     }

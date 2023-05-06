@@ -108,7 +108,6 @@ _flux_complete_format_name() {
 #  Get the list of subcommands from FLUX_EXEC_PATH and hard-coded builtins
 __get_flux_subcommands() {
     local subcommands
-    local deprecated="mini.py"
     if [ -z "$FLUX_EXEC_PATH" ]; then
         FLUX_EXEC_PATH=`flux env printenv FLUX_EXEC_PATH`
     fi
@@ -116,11 +115,9 @@ __get_flux_subcommands() {
     local IFS=":"
     for dir in $FLUX_EXEC_PATH; do
         for op in $dir/flux-*; do
-            if [[ -x $op  ]]; then
+            if [[ -x $op ]]; then
                 op="${op##*flux-}"
-                if ! _flux_contains_word ${op} $deprecated; then
-                    subcommands+="${op%.*} "
-                fi
+                subcommands+="${op%.*} "
             fi
         done
     done
@@ -130,33 +127,6 @@ __get_flux_subcommands() {
     done
 
     echo "$subcommands"
-}
-
-#  flux-cancel(1) completions
-_flux_cancel()
-{
-    local cmd=$1
-    OPTS="\
-        --all \
-        -n --dry-run \
-        -q --quiet \
-        -u --user= \
-        -S --states= \
-        -m --message= \
-    "
-    if [[ $cur != -* ]]; then
-        #  Attempt to substitute an active jobid
-        compopt +o filenames
-        active_jobs=$(flux jobs -no {id})
-        COMPREPLY=( $(compgen -W "${active_jobs}" -- "$cur") )
-        return 0
-    fi
-    COMPREPLY=( $(compgen -W "${OPTS} -h --help" -- "$cur") )
-    if [[ "${COMPREPLY[@]}" == *= ]]; then
-        # Add space if there is not a '=' in suggestions
-        compopt -o nospace
-    fi
-    return 0
 }
 
 #  flux-mini(1) completions
@@ -182,7 +152,6 @@ _flux_mini()
         --input= \
         --output= \
         --error= \
-        -u --unbuffered \
         -l --label-io \
         --flags= \
         --dry-run \
@@ -370,7 +339,6 @@ _flux_job()
         memo \
         taskmap \
         timeleft \
-        last \
     "
     local nojob_subcmds="\
         cancelall \
@@ -421,8 +389,6 @@ _flux_job()
         -v --verbose \
         -q --quiet \
         -r --read-only \
-        -i --stdin-ranks= \
-        -u --unbuffered \
         --debug \
     "
     local status_OPTS="\
@@ -478,7 +444,6 @@ _flux_job()
     local timeleft_OPTS="\
         -H --human
     "
-    local last_OPTS=""
     if [[ $cmd != "job" ]]; then
         if [[ $cur != -* ]]; then
            if _flux_contains_word ${cmd} ${subcmds}; then
@@ -1334,11 +1299,8 @@ _flux_core()
     fi
 
     case "${cmd}" in
-    submit|run|alloc|batch|bulksubmit)
-        _flux_mini $cmd
-        ;;
-    cancel)
-        _flux_cancel $subcmd
+    mini)
+        _flux_mini $subcmd
         ;;
     resource)
         _flux_resource $subcmd
